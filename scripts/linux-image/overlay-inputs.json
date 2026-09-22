@@ -1,0 +1,82 @@
+{
+  "filesystem-inventory.json": {
+    "bytes": 1653013,
+    "sha256": "4e2c4fb157c03d69729d209f4bcdd4c9ab02f55e0f7db40c28bdc226ac635145"
+  },
+  "patched-input-review/base-package-metadata.json": {
+    "bytes": 140534,
+    "sha256": "e5e952c84072e4e5a189d1850a428a9fe07dcb7d5e75e9fb60349b00fb19cd41"
+  },
+  "patched-input-review/acquired-inputs.json": {
+    "bytes": 5570,
+    "sha256": "10c6578f36efe5a39169910744d82e611448cd71e2b89ac768f56a91e21d1646"
+  },
+  "patched-input-review/package-path-changes.json": {
+    "bytes": 1579,
+    "sha256": "5a4a08b339aaee475fc05eb735665b9b9fbfcb2fb9a262d78c02a4abafca9494"
+  },
+  "1b7200988f192e72703c70486d494e2457935ac9b0f031ac09eb115b01a12d45.tar.gz": {
+    "bytes": 30143609,
+    "sha256": "1b7200988f192e72703c70486d494e2457935ac9b0f031ac09eb115b01a12d45"
+  },
+  "95399c30555ed14d22da0643930684f3dcfc7e7bf3325d958b8e490131cb9f5d.tar.gz": {
+    "bytes": 254449423,
+    "sha256": "95399c30555ed14d22da0643930684f3dcfc7e7bf3325d958b8e490131cb9f5d"
+  },
+  "patched-input-review/libssl3t64_3.5.7-1~deb13u2_arm64.deb": {
+    "bytes": 2766020,
+    "sha256": "ec131326aa9fa9ec934eca386bc7991f328fe383eaefd3e43bd8901a9199c5ae"
+  },
+  "patched-input-review/openssl_3.5.7-1~deb13u2_arm64.deb": {
+    "bytes": 1472236,
+    "sha256": "ff38f9e4fdbfef72d9cb31088e5e42f58c83c2fb1d1bbb4e4b4c9adc53c17100"
+  },
+  "patched-input-review/openssl-provider-legacy_3.5.7-1~deb13u2_arm64.deb": {
+    "bytes": 313492,
+    "sha256": "7628954796eb651fc499ad98d4e51435691c2ccce0b5fbae6b198cbece742db4"
+  },
+  "patched-input-review/bsdutils_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 109000,
+    "sha256": "9afcc3e049a66d7f703d092f845c800b767fb9afe9e681e1483eec163aadcb18"
+  },
+  "patched-input-review/libblkid1_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 166472,
+    "sha256": "d7d122b4c7a0a8ae6135a1687c9c4ce80a88f9e498c01998f634dd32caab9016"
+  },
+  "patched-input-review/liblastlog2-2_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 28616,
+    "sha256": "934e7f90814e014aa0ab8ffbadef4f31ce44228b7135db9b733f4b68cabfccfc"
+  },
+  "patched-input-review/libmount1_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 200668,
+    "sha256": "14e2d555459f3c0b1442bb49dd2d266ea202a003198c86f65508a1dbfaa18732"
+  },
+  "patched-input-review/libsmartcols1_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 139452,
+    "sha256": "1881ac0bc2a58a52ecbf6e7690b17552233b71e94129db79e2302656b0d22f24"
+  },
+  "patched-input-review/libuuid1_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 37648,
+    "sha256": "448ad6b190184dbff24508ef2eda88bd737a5ffc0f9750eb779fcf9885292bea"
+  },
+  "patched-input-review/login_4.16.0-2+really2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 116496,
+    "sha256": "c0bc34268bc1528b627f8c0cfe1e6d9ca7b4dd00428690a63f1d1b0adb5dc508"
+  },
+  "patched-input-review/mount_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 161232,
+    "sha256": "8b40a9eb9f72647c8732e9264c7328233f8ef8e9d962e516edeb210caa6789b6"
+  },
+  "patched-input-review/util-linux_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 1199468,
+    "sha256": "d427f83a08d46107e8f7d39f1522a8a316e785e45f04ad657d2ecb7570210d84"
+  },
+  "patched-input-review/clippy-1.97.1-aarch64-unknown-linux-gnu.tar.xz": {
+    "bytes": 3930232,
+    "sha256": "d8bac7b0ba5ca9bb868ccb9e367a1d52f4837f3ebf4892eaf64cda37ce362bb5"
+  },
+  "patched-input-review/rustfmt-1.97.1-aarch64-unknown-linux-gnu.tar.xz": {
+    "bytes": 1961408,
+    "sha256": "3dbde15d30794924195ae446f3d2ceb542a131306d22ae7912c7634d414622a8"
+  }
+}

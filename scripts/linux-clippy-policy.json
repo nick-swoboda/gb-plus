@@ -1,0 +1,23 @@
+{
+  "_comment": [
+    "Linux clippy policy for scripts/linux-verify.sh.",
+    "",
+    "The lint CONFIGURATION lives in the workspace Cargo.toml ([workspace.lints]:",
+    "clippy::all = warn, clippy::pedantic = warn, missing_docs = warn, unsafe_code",
+    "= deny). This file does not weaken it and must never be used to. It records",
+    "the diagnostics that are deliberately left standing, one lint per entry, each",
+    "with the reason it was not fixed.",
+    "",
+    "The gate compares observed per-lint counts against this file exactly, so drift",
+    "in either direction fails: a new diagnostic fails, and an entry that no longer",
+    "fires fails too. The baseline may only shrink deliberately, by editing this",
+    "file in the same commit that removes the diagnostic.",
+    "",
+    "max_errors is 0 and is not negotiable. A clippy error is a compile failure.",
+    "It is counted separately from warnings because conflating the two is exactly",
+    "how a tree with 3 errors was once reported as clean."
+  ],
+  "policy_version": 1,
+  "max_errors": 0,
+  "frozen": []
+}

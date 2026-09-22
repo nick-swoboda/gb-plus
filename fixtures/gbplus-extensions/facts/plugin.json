@@ -1,0 +1,7 @@
+{
+  "name": "gbplus-facts-example",
+  "version": "1.0.0",
+  "description": "An inert example skill for checking explicit project enablement and context delivery.",
+  "license": "MIT",
+  "skills": ["skills"]
+}

@@ -1,0 +1,50 @@
+[package]
+name = "grok-build-desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+default = []
+slint-ui = ["dep:slint"]
+
+[dependencies]
+grok-build-core = { path = "../grok-build-core" }
+grok-build-plus-host = { path = "../grok-build-plus-host" }
+grok-build-providers = { path = "../grok-build-providers" }
+grok-build-runner = { path = "../grok-build-runner" }
+grok-build-runner-client = { path = "../grok-build-runner-client" }
+rustix.workspace = true
+# Live xAI transport with the operating-system certificate verifier.
+rustls = { version = "=0.23.42", default-features = false, features = [
+    "std",
+    "tls12",
+    "ring",
+] }
+rustls-platform-verifier = { version = "=0.7.0", default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+# Legacy window toolkit under Slint Royalty-free 2.0.
+slint = { version = "=1.17.1", default-features = false, optional = true, features = [
+    "std",
+    "backend-winit",
+    "backend-winit-wayland",
+    "backend-winit-x11",
+    "renderer-femtovg",
+    "renderer-software",
+    "accessibility",
+    "compat-1-2",
+] }
+
+[dev-dependencies]
+grok-build-runner = { path = "../grok-build-runner", features = ["test-support"] }
+
+[[bin]]
+name = "grok-build"
+path = "src/main.rs"
+required-features = ["slint-ui"]
+
+[lints]
+workspace = true

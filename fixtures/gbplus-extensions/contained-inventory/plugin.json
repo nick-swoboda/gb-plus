@@ -1,0 +1,24 @@
+{
+  "name": "contained-inventory",
+  "version": "0.1.0",
+  "description": "A contained read-only workspace inventory and optional Cargo.lock protection hook.",
+  "license": "MIT",
+  "mcpServers": {
+    "inventory": {
+      "type": "stdio",
+      "command": "bin/contained-extension",
+      "args": ["--mcp"]
+    }
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bin/contained-extension",
+        "args": ["--hook"],
+        "timeout": 5
+      }]
+    }]
+  }
+}

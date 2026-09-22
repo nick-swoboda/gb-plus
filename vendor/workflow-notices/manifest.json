@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": "const-random-0.1.18-LICENSE.txt",
+      "sha256": "ff8f68cb076caf8cefe7a6430d4ac086ce6af2ca8ce2c4e5a2004d4552ef52a2"
+    },
+    {
+      "path": "const-random-macro-0.1.16-LICENSE.txt",
+      "sha256": "ff8f68cb076caf8cefe7a6430d4ac086ce6af2ca8ce2c4e5a2004d4552ef52a2"
+    },
+    {
+      "path": "crunchy-0.2.4-LICENSE.txt",
+      "sha256": "3eab77734a181b2a2e8418af9004f960f715f04aac4d76a26cf774f63a7b13d1"
+    },
+    {
+      "path": "pulldown-cmark-LICENSE.txt",
+      "sha256": "c4f10f55904bdb9f27d3fbf94c354926d6cfe8b982276e556238c258941b243b"
+    },
+    {
+      "path": "rhai-1.25.1-LICENSE.txt",
+      "sha256": "36516aefdc84c5d5a1e7485425913a22dbda69eb1930c5e84d6ae4972b5194b9"
+    },
+    {
+      "path": "rhai_codegen-3.2.0-LICENSE.txt",
+      "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+    },
+    {
+      "path": "smartstring-1.0.1-LICENSE.txt",
+      "sha256": "e6b6566f085df5746515c6d7e2edcaec0d2b77d527ac40d91409d783fb6c8508"
+    },
+    {
+      "path": "smartstring-1.0.1.crate",
+      "sha256": "3fb72c633efbaa2dd666986505016c32c3044395ceaf881518399d2f4127ee29"
+    },
+    {
+      "path": "thin-vec-0.2.19-LICENSE.txt",
+      "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+    },
+    {
+      "path": "tiny-keccak-2.0.2-LICENSE.txt",
+      "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499"
+    },
+    {
+      "path": "unicase-2.9.0-LICENSE.txt",
+      "sha256": "4f6bd11a0f17fe5b085ace1daaedb7b002a08316850dd9577c246c6a68a68e8c"
+    },
+    {
+      "path": "xai-workflow-LICENSE.txt",
+      "sha256": "116f7778b9802e569b7fa3a532b17bd80eb13c67837def01eed093d4ea472f28"
+    },
+    {
+      "path": "xai-workflow-NOTICE.md",
+      "sha256": "ee581876c3ee701e5a4b63ec4c45c0bdef28805ce8e87a476b3f82061b33400f"
+    }
+  ]
+}

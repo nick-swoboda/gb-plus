@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "GB Plus",
+  "version": "0.2.1-plus",
+  "identifier": "com.grokbuild.plus",
+  "build": {
+    "frontendDist": "ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "GB Plus",
+        "width": 1040,
+        "height": 720,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": false,
+        "visible": false,
+        "resizable": true,
+        "dragDropEnabled": false,
+        "fullscreen": false,
+        "maximized": false,
+        "decorations": true,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay",
+        "trafficLightPosition": {
+          "x": 14,
+          "y": 18
+        },
+        "theme": "Dark",
+        "backgroundColor": "#121312"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data:; media-src 'self' blob:; font-src 'self'; style-src 'self'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app"],
+    "icon": ["macos/GrokBuildPlus.icns"],
+    "category": "DeveloperTool",
+    "shortDescription": "Local-first agent workstation for macOS",
+    "macOS": {
+      "bundleVersion": "2",
+      "bundleName": "GB Plus",
+      "minimumSystemVersion": "15.0",
+      "signingIdentity": "-",
+      "hardenedRuntime": false,
+      "entitlements": "macos/GrokBuildPlus.entitlements",
+      "infoPlist": "macos/Info.plist"
+    }
+  }
+}

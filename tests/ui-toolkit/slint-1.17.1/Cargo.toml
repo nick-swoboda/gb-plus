@@ -1,0 +1,32 @@
+[package]
+name = "grok-build-slint-1-17-1-eval"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.97.0"
+license = "MIT"
+publish = false
+
+[workspace]
+resolver = "3"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+slint = { version = "=1.17.1", default-features = false, features = [
+    "std",
+    "backend-winit",
+    "backend-winit-wayland",
+    "backend-winit-x11",
+    "renderer-femtovg",
+    "renderer-software",
+    "accessibility",
+    "compat-1-2",
+] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"

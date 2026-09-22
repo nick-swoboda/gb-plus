@@ -1,0 +1,77 @@
+{
+  "scope": "candidate notices for the exact admitted optional WebSocket graph; not yet bundled in the app",
+  "packages": [
+    {
+      "package": "data-encoding-2.11.1",
+      "license_choice": "MIT",
+      "source_license": "LICENSE",
+      "file": "data-encoding-2.11.1-LICENSE-MIT.txt",
+      "sha256": "b68ad1a3367b825447089e1f8d6829b97f47a89eb78d2f4ebaef4672f5606186",
+      "archive_sha256": "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
+    },
+    {
+      "package": "ppv-lite86-0.2.21",
+      "license_choice": "MIT",
+      "source_license": "LICENSE-MIT",
+      "file": "ppv-lite86-0.2.21-LICENSE-MIT.txt",
+      "sha256": "4cada0bd02ea3692eee6f16400d86c6508bbd3bafb2b65fed0419f36d4f83e8f",
+      "archive_sha256": "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
+    },
+    {
+      "package": "rand-0.9.5",
+      "license_choice": "MIT",
+      "source_license": "LICENSE-MIT",
+      "file": "rand-0.9.5-LICENSE-MIT.txt",
+      "sha256": "209fbbe0ad52d9235e37badf9cadfe4dbdc87203179c0899e738b39ade42177b",
+      "archive_sha256": "b9ef1d0d795eb7d84685bca4f72f3649f064e6641543d3a8c415898726a57b41"
+    },
+    {
+      "package": "rand_chacha-0.9.0",
+      "license_choice": "MIT",
+      "source_license": "LICENSE-MIT",
+      "file": "rand_chacha-0.9.0-LICENSE-MIT.txt",
+      "sha256": "209fbbe0ad52d9235e37badf9cadfe4dbdc87203179c0899e738b39ade42177b",
+      "archive_sha256": "d3022b5f1df60f26e1ffddd6c66e8aa15de382ae63b3a0c1bfc0e4d3e3f325cb"
+    },
+    {
+      "package": "rand_core-0.9.5",
+      "license_choice": "MIT",
+      "source_license": "LICENSE-MIT",
+      "file": "rand_core-0.9.5-LICENSE-MIT.txt",
+      "sha256": "209fbbe0ad52d9235e37badf9cadfe4dbdc87203179c0899e738b39ade42177b",
+      "archive_sha256": "76afc826de14238e6e8c374ddcc1fa19e374fd8dd986b0d2af0d02377261d83c"
+    },
+    {
+      "package": "sha1-0.10.7",
+      "license_choice": "MIT",
+      "source_license": "LICENSE-MIT",
+      "file": "sha1-0.10.7-LICENSE-MIT.txt",
+      "sha256": "b4eb00df6e2a4d22518fcaa6a2b4646f249b3a3c9814509b22bd2091f1392ff1",
+      "archive_sha256": "a978451301f4db1d02937a4ab3ccce137717b81826e79b7d49ffe3244a13c3b8"
+    },
+    {
+      "package": "tokio-tungstenite-0.28.0",
+      "license_choice": "MIT",
+      "source_license": "LICENSE",
+      "file": "tokio-tungstenite-0.28.0-LICENSE-MIT.txt",
+      "sha256": "fdd55e2b2da854b0fbdc1e607df7c2ba1e1ebf91ecb77c515511ebeef972bc8f",
+      "archive_sha256": "d25a406cddcc431a75d3d9afc6a7c0f7428d4891dd973e4d54c56b46127bf857"
+    },
+    {
+      "package": "tungstenite-0.28.0",
+      "license_choice": "MIT",
+      "source_license": "LICENSE-MIT",
+      "file": "tungstenite-0.28.0-LICENSE-MIT.txt",
+      "sha256": "7fea0ee51a4ca5d5cea7464135fd55e8b09caf3a61da3d451ac8a22af95c033f",
+      "archive_sha256": "8628dcc84e5a09eb3d8423d6cb682965dea9133204e8fb3efee74c2a0c259442"
+    },
+    {
+      "package": "utf-8-0.7.6",
+      "license_choice": "MIT",
+      "source_license": "LICENSE-MIT",
+      "file": "utf-8-0.7.6-LICENSE-MIT.txt",
+      "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "archive_sha256": "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
+    }
+  ]
+}

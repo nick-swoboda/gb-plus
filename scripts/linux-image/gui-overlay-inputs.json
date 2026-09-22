@@ -1,0 +1,90 @@
+{
+  "gui-input-review/admission.json": {
+    "bytes": 25634,
+    "sha256": "81b9061d7879b384b6ab25f31b28a00fde7d6d84c0d66b9b074c705329271cb0"
+  },
+  "gui-input-review/archive-review.json": {
+    "bytes": 666581,
+    "sha256": "aeacaf82bb500e9003e38734e48f94b6dde0ae23bf38e78dbe5c45b081e1dcb7"
+  },
+  "patched-input-review/construction-v1/overlay.tar": {
+    "bytes": 52572160,
+    "sha256": "b805c63b0ed41d194b531697b1ef969888b76f04837f830e4f7e4c121eef014b"
+  },
+  "gui-input-review/libfontconfig-dev_2.15.0-2.3_arm64.deb": {
+    "bytes": 411704,
+    "sha256": "900c6ec77004811e24ca5e014f663e910802ee505c3c29dbd93a8c8325085af8"
+  },
+  "gui-input-review/pkgconf_1.8.1-4_arm64.deb": {
+    "bytes": 26148,
+    "sha256": "aaf89947e9a5a6d980d14f43dfde8d0ad4e869b5cd33567321ca8baeb7ee7740"
+  },
+  "gui-input-review/libfontconfig1_2.15.0-2.3_arm64.deb": {
+    "bytes": 387092,
+    "sha256": "872781cf62926b68c34a4302a3caae334ff8d4d83a2b2477f8fb454460aadc99"
+  },
+  "gui-input-review/libexpat1-dev_2.8.3-1~deb13u1_arm64.deb": {
+    "bytes": 163280,
+    "sha256": "a9b760a2291295ab70d45123926d800f5333bbdf7da0f132fb72268a377f8c6d"
+  },
+  "gui-input-review/libfreetype-dev_2.13.3+dfsg-1+deb13u1_arm64.deb": {
+    "bytes": 599544,
+    "sha256": "967117e243f1ac18cb822db246ff6c4f482fd272e89ea8b3b7760871ca74b3fe"
+  },
+  "gui-input-review/uuid-dev_2.41.5-0+deb13u1_arm64.deb": {
+    "bytes": 49696,
+    "sha256": "eca5896d42fcc5daaf3f875a11a8766ef6673191d236d233b92d33f6b5fc0341"
+  },
+  "gui-input-review/pkgconf-bin_1.8.1-4_arm64.deb": {
+    "bytes": 29636,
+    "sha256": "bce0638102650b61224901da320c2f867a91cfc133532a5fb526d2ce05465fe6"
+  },
+  "gui-input-review/libexpat1_2.8.3-1~deb13u1_arm64.deb": {
+    "bytes": 109116,
+    "sha256": "c3248c4beb721c8290e6e34527ae56b1fc965aa6a14982ca602df4458ef0854e"
+  },
+  "gui-input-review/libfreetype6_2.13.3+dfsg-1+deb13u1_arm64.deb": {
+    "bytes": 422284,
+    "sha256": "0c426e83f1af816b9a4df9056fd2238463d1cd07969ee640965da9fb6ecaf107"
+  },
+  "gui-input-review/fontconfig-config_2.15.0-2.3_arm64.deb": {
+    "bytes": 318304,
+    "sha256": "10f643f467b51cf25fc18d1945bc61246dd8d8d1fe6bc712a2b1712c74ebc4d6"
+  },
+  "gui-input-review/libbrotli-dev_1.1.0-2+b7_arm64.deb": {
+    "bytes": 307912,
+    "sha256": "6c1fb26205d7241406511b0b3e9b05d87d25c2288ac4dcc9d5d2ab3af5bd9116"
+  },
+  "gui-input-review/libbz2-dev_1.0.8-6_arm64.deb": {
+    "bytes": 31880,
+    "sha256": "580ca6907c86073e275241fc25448bd7867938d0c326cc3975a9ea84f8a7ba0f"
+  },
+  "gui-input-review/libpng-dev_1.6.48-1+deb13u5_arm64.deb": {
+    "bytes": 360892,
+    "sha256": "a212fde02b2930302edcc959eaa2079bb459def3a92741cc09f6f55c250b8ca0"
+  },
+  "gui-input-review/zlib1g-dev_1.3.dfsg+really1.3.1-1+b1_arm64.deb": {
+    "bytes": 916612,
+    "sha256": "745ebcf1fa115e230af76216355d7290a24f1790fe3780249b519c0e4d30534f"
+  },
+  "gui-input-review/libpkgconf3_1.8.1-4_arm64.deb": {
+    "bytes": 35324,
+    "sha256": "8a9477ed7af47d7ddefa1fe02bf9f87d6778e8cc59062064f1b076880a7a14a5"
+  },
+  "gui-input-review/libbrotli1_1.1.0-2+b7_arm64.deb": {
+    "bytes": 307600,
+    "sha256": "10270398c4842e71c72b4081fa1761728b3225d6c8dce7c58d5baafe58a5e18f"
+  },
+  "gui-input-review/libpng16-16t64_1.6.48-1+deb13u5_arm64.deb": {
+    "bytes": 275192,
+    "sha256": "11096ad43504ca24e8044bcc89e922d932a2812ff25568613b28d22235190ba5"
+  },
+  "gui-input-review/fonts-dejavu-core_2.37-8_all.deb": {
+    "bytes": 840460,
+    "sha256": "86635b3d25b3655fc11cb3ecc3af59f0bf19643b02b94f2de48bd10253cdba12"
+  },
+  "gui-input-review/fonts-dejavu-mono_2.37-8_all.deb": {
+    "bytes": 488808,
+    "sha256": "3003e98a5debfdeadc7040a7f715fe9fe6fb67f68deacf6049b54e30f07fc014"
+  }
+}

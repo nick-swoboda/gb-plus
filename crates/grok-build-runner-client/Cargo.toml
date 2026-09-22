@@ -1,0 +1,21 @@
+[package]
+name = "grok-build-runner-client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+default = []
+
+[dependencies]
+grok-build-core = { path = "../grok-build-core" }
+grok-build-providers = { path = "../grok-build-providers" }
+grok-build-runner = { path = "../grok-build-runner" }
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+[lints]
+workspace = true

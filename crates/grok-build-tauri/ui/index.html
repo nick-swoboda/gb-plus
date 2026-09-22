@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#121312" />
+    <title>GB Plus</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="cli-chat.css" />
+    <link rel="stylesheet" href="vendor/xterm/xterm.css" />
+    <link rel="stylesheet" href="styles/terminal.css" />
+    <link rel="stylesheet" href="styles/browser.css" />
+    <link rel="stylesheet" href="styles/account.css" />
+    <link rel="stylesheet" href="styles/workspace.css" />
+    <link rel="stylesheet" href="styles/activity.css" />
+    <script src="app.js" type="module"></script>
+  </head>
+  <body class="is-booting">
+    <div class="traffic-light-safe-drag" data-tauri-drag-region aria-hidden="true"></div>
+
+    <div class="app-shell" id="app-shell" aria-busy="true">
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <button class="brand-lockup" type="button" data-view-jump="project" aria-label="Open Projects">
+          <span class="brand-mark" aria-hidden="true"><img src="assets/gb-plus.svg" alt="" /></span>
+          <div>
+            <div class="brand-name">GB Plus</div>
+          </div>
+        </button>
+
+        <nav class="sidebar-nav" aria-label="Main views">
+          <button class="nav-item" type="button" data-view="project">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M2.75 5.5h5l1.4 1.7h8.1v8.55a1.5 1.5 0 0 1-1.5 1.5H4.25a1.5 1.5 0 0 1-1.5-1.5V5.5Z" />
+              <path d="M2.75 6V4.25a1.5 1.5 0 0 1 1.5-1.5H7l1.4 1.7h7.35a1.5 1.5 0 0 1 1.5 1.5V7" />
+            </svg>
+            <span>Projects</span>
+          </button>
+          <button class="nav-item is-selected" type="button" data-view="chat" aria-current="page">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M3 4.75A1.75 1.75 0 0 1 4.75 3h10.5A1.75 1.75 0 0 1 17 4.75v7.5A1.75 1.75 0 0 1 15.25 14H9l-4.6 3v-3.1A1.75 1.75 0 0 1 3 12.25v-7.5Z" />
+            </svg>
+            <span>Chat</span>
+          </button>
+          <button class="nav-item" type="button" data-view="workspace-browser">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M3 3.25h5l1.45 1.7H17v11.8H3V3.25Z" />
+              <path d="M6.25 8.25h7.5M6.25 11h7.5M6.25 13.75h4.5" />
+            </svg>
+            <span>Workspace</span>
+          </button>
+          <button class="nav-item" type="button" data-view="terminal">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <rect x="2.75" y="3.25" width="14.5" height="13.5" rx="2" />
+              <path d="m6 7 2.6 2.5L6 12M10.5 12h3.5" />
+            </svg>
+            <span>Terminal</span>
+          </button>
+          <button class="nav-item" type="button" data-view="browser">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="10" cy="10" r="7.25" />
+              <path d="M2.75 10h14.5M10 2.75c2 2 3 4.4 3 7.25s-1 5.25-3 7.25M10 2.75c-2 2-3 4.4-3 7.25s1 5.25 3 7.25" />
+            </svg>
+            <span>Browser</span>
+          </button>
+          <button class="nav-item" type="button" data-view="review">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M5 2.75h7.25L16 6.5v10.75H5V2.75Z" />
+              <path d="M12 2.75V6.5h4M7.75 10h5.5M7.75 13h4" />
+            </svg>
+            <span>Review</span>
+          </button>
+          <button class="nav-item" type="button" data-view="activity">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M3 15.75V9.5M7.5 15.75V5.75M12 15.75V8M16.5 15.75V3.25" />
+            </svg>
+            <span>Activity</span>
+          </button>
+          <button class="nav-item" type="button" data-view="checks">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M10 2.5 16 5v4.4c0 3.75-2.55 6.45-6 8.1-3.45-1.65-6-4.35-6-8.1V5l6-2.5Z" />
+              <path d="m7.2 9.8 1.8 1.8 3.9-4" />
+            </svg>
+            <span>Checks</span>
+          </button>
+          <button class="nav-item" type="button" data-view="account">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="10" cy="7" r="3.25" />
+              <path d="M4 17c.45-3.2 2.45-5 6-5s5.55 1.8 6 5" />
+            </svg>
+            <span>Account</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <button class="project-mini" id="project-mini" type="button" data-view-jump="project" aria-label="Open active project in Projects">
+          <span class="project-mini-icon" aria-hidden="true">⌁</span>
+          <span class="project-mini-copy">
+            <span class="micro-label">ACTIVE PROJECT</span>
+            <strong id="sidebar-project">Not bound</strong>
+          </span>
+        </button>
+
+        <button class="security-mini" id="security-mini" type="button" data-kind="off" data-security-toggle aria-label="Show command security checks">
+          <span class="status-dot" id="sidebar-security-dot" data-kind="off" aria-hidden="true"></span>
+          <span class="security-mini-copy">
+            <strong id="sidebar-security-label">Command security</strong>
+          </span>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>
+        </button>
+      </aside>
+
+      <main class="workspace">
+        <header class="toolbar" data-tauri-drag-region>
+          <div class="toolbar-route">
+            <span id="route-label">Chat</span>
+          </div>
+          <div class="toolbar-meta">
+            <button class="button button-secondary" id="open-extensions" type="button" aria-label="Open Extensions">Extensions</button>
+            <button class="toolbar-capability-chip" id="browser-toolbar-chip" type="button" data-kind="off" data-view-jump="browser" data-browser-surface-jump="browser" aria-label="Show Browser: Off">Browser Off</button>
+            <button class="toolbar-capability-chip" id="capture-toolbar-chip" type="button" data-kind="off" data-view-jump="browser" data-browser-surface-jump="capture" aria-label="Show Capture: Off">Capture Off</button>
+            <button class="toolbar-capability-chip" id="desktop-toolbar-chip" type="button" data-kind="off" data-view-jump="browser" data-browser-surface-jump="desktop" aria-label="Show Desktop Control: Off">Desktop Off</button>
+            <button class="button button-quiet-danger global-stop" id="global-capability-stop" type="button" data-busy-allowed hidden>Stop capabilities</button>
+            <div class="notification-shell">
+              <button class="notification-bell" id="notification-bell" type="button" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" data-busy-allowed>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 14.5h11l-1.3-1.8V8.5a4.2 4.2 0 0 0-8.4 0v4.2L4.5 14.5ZM8.2 16.2c.4.8 1 1.2 1.8 1.2s1.4-.4 1.8-1.2" /></svg>
+                <span class="notification-count" id="notification-count" hidden>0</span>
+              </button>
+              <div class="notification-popover" id="notification-popover" role="dialog" aria-label="Notifications" hidden>
+                <header><strong>Notifications</strong></header>
+                <div class="notification-empty" id="notification-empty">You’re all caught up.</div>
+                <div class="notification-list" id="notification-list"></div>
+              </div>
+            </div>
+            <span class="version-label" id="version-label" hidden>v?</span>
+          </div>
+        </header>
+
+        <div class="view-stack">
+          <section class="view" data-view-panel="project" aria-labelledby="project-title">
+            <div class="view-inner">
+              <header class="view-heading">
+                <h1 id="project-title">Projects</h1>
+              </header>
+
+              <article class="panel project-panel">
+                <div class="folder-state-row">
+                  <div class="folder-glyph" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M3 6.5h7l1.7 2H21v9.75A1.75 1.75 0 0 1 19.25 20H4.75A1.75 1.75 0 0 1 3 18.25V6.5Z" /></svg>
+                  </div>
+                  <div>
+                    <strong id="project-state-title">No folder bound</strong>
+                    <details class="inline-details"><summary>Details</summary><p id="project-state-copy">Choose a folder to begin.</p></details>
+                  </div>
+                </div>
+                <div class="project-list-heading">
+                  <span>Projects</span>
+                  <span id="project-count">0 projects</span>
+                </div>
+                <div class="project-source-list" id="project-list" role="list" aria-label="Known projects"></div>
+                <div class="project-list-empty" id="project-list-empty">
+                  No projects yet
+                </div>
+                <div class="folder-picker-actions" aria-label="Project folder actions">
+                  <button class="button button-primary" id="choose-folder" type="button">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.75 5.5h5l1.4 1.7h8.1v8.55a1.5 1.5 0 0 1-1.5 1.5H4.25a1.5 1.5 0 0 1-1.5-1.5V5.5Z" /></svg>
+                    Choose Folder…
+                  </button>
+                  <button class="button button-secondary" id="create-folder" type="button" aria-label="Create a new project folder" title="Create and bind a new project folder">
+                    <span class="button-plus" aria-hidden="true">+</span>
+                    Folder
+                  </button>
+                </div>
+                <div class="folder-path-divider"><span>OR ENTER A PATH</span></div>
+                <form class="folder-form" id="folder-form">
+                  <label for="folder-path">Folder path</label>
+                  <div class="field-action-row">
+                    <input id="folder-path" name="folder-path" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="/Users/you/Projects/example" />
+                    <button class="button button-secondary" type="submit">Bind path</button>
+                  </div>
+                </form>
+              </article>
+
+            </div>
+          </section>
+
+          <section class="view is-active" data-view-panel="chat" aria-labelledby="chat-title">
+            <div class="view-inner chat-layout">
+              <header class="view-heading compact">
+                <div>
+                  <h1 id="chat-title">Chat</h1>
+                </div>
+                <div class="chat-run-controls">
+                  <button class="auto-read-toggle" id="read-aloud-auto" type="button" data-mode="connect" aria-label="Open Account to connect Grok voice" title="Open Account to connect Grok voice" data-busy-allowed>
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 8h3l4-3v10l-4-3H4zM14 7c1 .8 1.5 1.8 1.5 3S15 12.2 14 13" /></svg>
+                    <span>Auto-read</span>
+                  </button>
+                  <button class="button button-secondary chat-stop-button" id="cancel-chat" type="button" aria-label="Stop agent run" title="Stop" data-busy-allowed hidden>
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6" y="6" width="8" height="8" rx="1" /></svg>
+                  </button>
+                </div>
+              </header>
+
+              <div class="chat-canvas" id="chat-canvas">
+                <div class="welcome-state" id="welcome-state">
+                  <div class="welcome-symbol" aria-hidden="true">✦</div>
+                  <h2>Start a conversation</h2>
+                  <button class="button button-secondary" id="welcome-bind-project" type="button" data-view-jump="project">Bind a project</button>
+                </div>
+
+                <div class="transcript" id="transcript" hidden>
+                  <div class="assistant-messages" id="transcript-body"></div>
+                  <div class="chat-pending-turns" id="chat-pending-turns" hidden></div>
+                  <div class="assistant-messages" id="streaming-body" hidden></div>
+                  <section class="chat-change-card" id="chat-change-card" aria-label="Pending file changes" hidden>
+                    <div class="chat-change-summary">
+                      <button class="button button-secondary" id="chat-change-view" type="button" aria-expanded="false">0 changes</button>
+                      <div class="chat-change-actions">
+                        <button class="button button-quiet-danger" id="chat-change-reject" type="button">Remove</button>
+                        <button class="button button-primary" id="chat-change-accept" type="button">Accept</button>
+                      </div>
+                    </div>
+                    <div class="chat-change-list" id="chat-change-list" hidden></div>
+                  </section>
+                </div>
+              </div>
+
+              <form class="composer" id="chat-form">
+                <div class="chat-next-strip" id="chat-next-strip" hidden>
+                  <button class="chat-next-summary" id="chat-next-summary" type="button" aria-expanded="false" aria-haspopup="dialog">Steer</button>
+                  <div class="chat-next-popover" id="chat-next-popover" role="dialog" aria-label="Steering" hidden>
+                    <div class="chat-steer-confirmation" id="chat-steer-confirmation" hidden>
+                      <div>
+                        <strong>Steer this run?</strong>
+                        <span id="chat-steer-preview"></span>
+                      </div>
+                      <div>
+                        <button class="chat-next-remove" id="chat-steer-cancel" type="button">Cancel</button>
+                        <button class="chat-next-action" id="chat-steer-submit" type="button" title="Send at the next safe step">Send now</button>
+                      </div>
+                    </div>
+                    <div class="chat-next-list" id="chat-next-list"></div>
+                  </div>
+                </div>
+                <div class="composer-context">
+                  <span id="composer-context">Bind a folder to start</span>
+                  <span class="context-dot" id="composer-context-dot" aria-hidden="true"></span>
+                  <span class="chat-turn-status" id="chat-turn-status" data-phase="idle" role="status" aria-live="polite" hidden>
+                    <span class="chat-turn-spinner" aria-hidden="true">✦</span>
+                    <span id="chat-turn-status-label"></span>
+                  </span>
+                  <span class="chat-context-meter" id="chat-context-meter" data-state="unknown" tabindex="0" hidden>
+                    <span class="chat-context-tokens" id="chat-context-label"></span>
+                    <span class="chat-context-track" id="chat-context-track" hidden>
+                      <span class="chat-context-bar" aria-hidden="true">
+                        <span class="chat-context-fill" id="chat-context-fill"></span>
+                      </span>
+                      <span class="chat-context-percent" id="chat-context-percent"></span>
+                    </span>
+                  </span>
+                </div>
+                <div class="composer-row">
+                  <textarea id="chat-draft" rows="2" maxlength="12000" placeholder="Ask about the project or describe a change…"></textarea>
+                  <div class="send-control" id="send-control" data-running="false">
+                    <button class="send-button" id="send-button" type="submit" aria-label="Send message" title="Send">
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h13M11 5l5 5-5 5" /></svg>
+                    </button>
+                    <button class="send-menu-toggle" id="send-menu-toggle" type="button" aria-label="More send options" aria-expanded="false" title="More send options" hidden>
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4" /></svg>
+                    </button>
+                    <div class="send-menu" id="send-menu" role="menu" hidden>
+                      <button id="send-next" type="button" role="menuitem">Send next</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section class="view" data-view-panel="workspace-browser" aria-labelledby="workspace-browser-title">
+            <div class="view-inner workspace-browser-layout">
+              <header class="view-heading compact workspace-browser-heading">
+                <div>
+                  <h1 id="workspace-browser-title">Workspace</h1>
+                </div>
+                <button class="button button-secondary" id="workspace-refresh" type="button">Refresh</button>
+              </header>
+
+              <details class="worktree-manager" id="worktree-manager">
+                <summary>
+                  <span class="worktree-summary-copy">
+                    <span class="panel-kicker">GIT</span>
+                    <strong id="worktree-current">Base project</strong>
+                    <span id="worktree-status" data-kind="idle" role="status" aria-live="polite">No managed worktrees yet.</span>
+                  </span>
+                  <span class="worktree-summary-chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <div class="worktree-manager-body">
+                  <div class="worktree-manager-actions">
+                    <button class="button button-secondary" id="worktree-open-base" type="button">Main project</button>
+                    <form class="worktree-create-form" id="worktree-create-form">
+                      <label>
+                        <span>Name</span>
+                        <input id="worktree-task" type="text" maxlength="128" autocomplete="off" placeholder="Worktree name" />
+                      </label>
+                      <details class="worktree-advanced">
+                        <summary>Advanced</summary>
+                        <label>
+                          <span>Starting point</span>
+                          <input id="worktree-base-ref" type="text" maxlength="256" autocomplete="off" spellcheck="false" value="HEAD" />
+                        </label>
+                      </details>
+                      <button class="button button-primary" type="submit">Create worktree</button>
+                    </form>
+                  </div>
+                  <div class="worktree-empty" id="worktree-empty">No managed worktrees yet.</div>
+                  <div class="git-setup" id="git-setup" hidden>
+                    <button class="button button-primary" id="git-setup-start" type="button">Set up Git</button>
+                    <form class="git-identity-form" id="git-identity-form" hidden>
+                      <label>Name <input id="git-author-name" type="text" maxlength="128" autocomplete="name" /></label>
+                      <label>Email <input id="git-author-email" type="email" maxlength="128" autocomplete="email" /></label>
+                      <button class="button button-primary" type="submit">Finish setup</button>
+                    </form>
+                    <details><summary>Details</summary><span id="git-setup-detail">Creates local Git history with an empty first commit. Project files stay untouched.</span></details>
+                  </div>
+                  <div class="worktree-list" id="worktree-list" aria-live="polite"></div>
+                </div>
+              </details>
+
+              <div class="workspace-browser-shell">
+                <aside class="workspace-tree-pane" aria-label="Workspace file tree">
+                  <header class="workspace-pane-head">
+                    <span class="panel-kicker">FILES</span>
+                    <strong id="workspace-root">No active project</strong>
+                    <span id="workspace-status" data-kind="idle" role="status" aria-live="polite">Bind a project to browse files.</span>
+                  </header>
+                  <div class="workspace-tree-empty" id="workspace-empty">
+                    No active workspace. Bind or select a project first.
+                  </div>
+                  <div class="workspace-tree" id="workspace-tree" role="tree" aria-label="Active workspace files" hidden></div>
+                </aside>
+
+                <article class="workspace-viewer-pane" aria-label="Read-only file viewer">
+                  <div class="workspace-viewer-empty" id="workspace-viewer-empty">
+                    <span class="workspace-viewer-symbol" aria-hidden="true">⌘</span>
+                    <strong>Select a project file</strong>
+                  </div>
+                  <div class="workspace-viewer" id="workspace-viewer" data-status="idle" hidden>
+                    <header class="workspace-file-head">
+                      <strong id="workspace-file-path">No file selected</strong>
+                      <span id="workspace-file-meta">Read only</span>
+                    </header>
+                    <p class="workspace-file-detail" id="workspace-file-detail"></p>
+                    <pre id="workspace-file-content" tabindex="0" aria-label="Read-only file contents"></pre>
+                  </div>
+                </article>
+              </div>
+
+              <div class="worktree-action-sheet" id="worktree-action-sheet" role="dialog" aria-modal="true" aria-labelledby="worktree-action-title" hidden>
+                <div class="worktree-action-card">
+                  <span class="panel-kicker">USER GIT ACTION</span>
+                  <h2 id="worktree-action-title">Confirm action</h2>
+                  <p id="worktree-action-detail"></p>
+                  <label id="worktree-action-field-label" for="worktree-action-field">Confirmation</label>
+                  <textarea id="worktree-action-field" rows="3" maxlength="4096" spellcheck="false"></textarea>
+                  <div class="worktree-action-buttons">
+                    <button class="button button-secondary" id="worktree-action-cancel" type="button">Cancel</button>
+                    <button class="button button-quiet-danger" id="worktree-action-confirm" type="button">Confirm</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" data-view-panel="terminal" aria-labelledby="terminal-title">
+            <div class="view-inner terminal-layout">
+              <header class="view-heading compact">
+                <div>
+                  <h1 id="terminal-title">Terminal</h1>
+                </div>
+                <span class="mode-chip">Interactive user shell. Not contained.</span>
+              </header>
+
+              <article class="terminal-frame">
+                <header class="terminal-bar">
+                  <div class="terminal-lights" aria-hidden="true"><span></span><span></span><span></span></div>
+                  <div class="terminal-cwd">
+                    <span>CWD</span>
+                    <strong id="terminal-cwd">No active project</strong>
+                  </div>
+                  <span class="terminal-state" id="pty-status" data-state="not_started" role="status" aria-live="polite">Not started</span>
+                </header>
+                <div class="terminal-viewport-wrap">
+                  <div class="terminal-xterm" id="terminal-xterm" aria-label="Interactive user shell output and input"></div>
+                  <div class="terminal-placeholder" id="pty-placeholder">
+                    <strong>Shell not started</strong>
+                    <span>Start a direct interactive shell in the active project or worktree.</span>
+                  </div>
+                </div>
+                <footer class="terminal-controls">
+                  <div class="terminal-shell-identity">
+                    <span>SHELL</span>
+                    <strong id="pty-shell">Selected when started</strong>
+                  </div>
+                  <div class="terminal-control-actions">
+                    <button class="button button-secondary" id="pty-interrupt" type="button" disabled>Interrupt</button>
+                    <button class="button button-quiet-danger" id="pty-stop" type="button" disabled>Stop shell</button>
+                    <button class="button button-primary" id="pty-start" type="button">Start shell</button>
+                  </div>
+                </footer>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-view-panel="browser" aria-labelledby="browser-title">
+            <div class="view-inner browser-layout">
+              <header class="view-heading compact browser-heading">
+                <div>
+                  <h1 id="browser-title">Browser</h1>
+                </div>
+                <div class="browser-surface-tabs" role="tablist" aria-label="Browser tools">
+                  <button type="button" role="tab" aria-selected="true" data-browser-surface-button="browser">Browser</button>
+                  <button type="button" role="tab" aria-selected="false" data-browser-surface-button="capture">Capture</button>
+                  <button type="button" role="tab" aria-selected="false" data-browser-surface-button="desktop">Desktop</button>
+                </div>
+              </header>
+
+              <div class="browser-runtime-panel" data-browser-surface-panel="browser">
+                <span id="browser-runtime-detail" role="status" aria-live="polite">Checking…</span>
+                <div class="browser-runtime-actions">
+                  <button class="button button-secondary" id="browser-install" type="button">Download</button>
+                  <progress id="browser-progress" class="browser-progress" max="1" value="0" hidden aria-label="Chrome runtime download progress"></progress>
+                </div>
+              </div>
+
+              <article class="browser-control-panel" data-browser-surface-panel="browser">
+                <div class="browser-arm-row">
+                  <div class="browser-arm-actions">
+                    <span class="capability-chip" id="browser-chip" data-kind="off" role="status">Browser Off</span>
+                    <button class="button button-primary" id="browser-arm-in-app" type="button">Start browser</button>
+                    <button class="button button-secondary" id="browser-open-headed" type="button">Open window</button>
+                    <button class="button button-quiet-danger" id="browser-stop" type="button" hidden>Stop</button>
+                  </div>
+                </div>
+
+                <form class="browser-url-form" id="browser-url-form">
+                  <div class="field-action-row">
+                    <input id="browser-url" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Enter an address" value="https://example.com" aria-label="Enter an address" />
+                    <button class="button button-secondary browser-go" id="browser-navigate" type="submit" aria-label="Go" title="Go">→</button>
+                    <button class="button button-quiet browser-refresh-button" id="browser-refresh" type="button" aria-label="Refresh preview" title="Refresh preview" hidden>
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 7.5A6 6 0 1 0 16 11M15.5 3.75V7.5h-3.75" /></svg>
+                    </button>
+                  </div>
+                </form>
+
+                <div class="browser-viewport-shell">
+                  <div class="browser-viewport" id="browser-viewport" tabindex="0" aria-label="Browser viewport. Click to control; click outside or press Escape to stop controlling.">
+                    <img id="browser-screenshot" alt="Current controlled browser viewport" hidden />
+                    <div class="browser-empty" id="browser-empty">
+                      <strong>No page yet</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <footer class="browser-footer">
+                  <a id="browser-terms" href="https://policies.google.com/terms" target="_blank" rel="noreferrer">Google terms</a>
+                </footer>
+                <p class="browser-status" id="browser-status" data-kind="off" role="status" aria-live="polite" hidden></p>
+              </article>
+
+              <article class="browser-control-panel capture-panel" aria-labelledby="capture-title" data-browser-surface-panel="capture" hidden>
+                <div class="browser-arm-row">
+                  <div>
+                    <h2 id="capture-title">Capture</h2>
+                    <strong id="capture-grant-detail">Off · run lifetime or 15 minutes</strong>
+                  </div>
+                  <div class="browser-arm-actions">
+                    <span class="capability-chip" id="capture-chip" data-kind="off" role="status">Capture Off</span>
+                    <button class="button button-primary" id="capture-arm" type="button">Enable capture</button>
+                    <button class="button button-secondary" id="capture-take" type="button" disabled>Take still</button>
+                    <button class="button button-quiet-danger" id="capture-stop" type="button" hidden>Stop</button>
+                  </div>
+                </div>
+                <div class="capture-preview">
+                  <img id="capture-preview" alt="Transient screen capture waiting for the next Chat run" hidden />
+                  <div class="browser-empty" id="capture-empty">
+                    <strong>No still captured</strong>
+                    <span>Enable capture, then take a still.</span>
+                  </div>
+                </div>
+                <p class="browser-status" id="capture-status" data-kind="off" role="status" aria-live="polite">Capture is Off.</p>
+              </article>
+
+              <article class="browser-control-panel capture-panel desktop-panel" aria-labelledby="desktop-title" data-browser-surface-panel="desktop" hidden>
+                <div class="browser-arm-row">
+                  <div>
+                    <h2 id="desktop-title">Desktop control</h2>
+                    <strong id="desktop-grant-detail">Off · run lifetime or 10 minutes</strong>
+                  </div>
+                  <div class="browser-arm-actions">
+                    <span class="capability-chip" id="desktop-chip" data-kind="off" role="status">Desktop Control Off</span>
+                    <button class="button button-secondary" id="desktop-select" type="button">Choose app</button>
+                    <button class="button button-primary" id="desktop-arm" type="button" disabled>Enable control</button>
+                    <button class="button button-quiet-danger" id="desktop-stop" type="button" hidden>Stop</button>
+                  </div>
+                </div>
+                <div class="desktop-target" id="desktop-target">
+                  <span>No target selected. Use the countdown and make the intended app window frontmost.</span>
+                </div>
+                <p class="browser-status" id="desktop-status" data-kind="off" role="status" aria-live="polite">Desktop Control is Off.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-view-panel="review" aria-labelledby="review-title">
+            <div class="view-inner review-layout">
+              <header class="view-heading compact review-heading">
+                <div>
+                  <h1 id="review-title">Review</h1>
+                </div>
+              </header>
+
+              <div class="review-scroll">
+                <section class="review-lane git-review-lane" aria-labelledby="git-review-title" aria-description="User-only Git actions; agents cannot call them">
+                  <header class="review-lane-head">
+                    <div>
+                      <h2 id="git-review-title">Git changes</h2>
+                      <p id="git-review-status">Open Review to inspect the active Git workspace.</p>
+                    </div>
+                    <div class="git-review-head-actions">
+                      <button class="button button-secondary" id="git-review-add" type="button">Add</button>
+                      <button class="button button-secondary" id="git-review-refresh" type="button">Refresh</button>
+                    </div>
+                  </header>
+                  <div class="git-review-conflicts" id="git-review-conflicts" hidden></div>
+                  <div class="git-review-empty" id="git-review-empty">No Git changes loaded.</div>
+                  <section class="git-review-group" id="git-review-staged" hidden aria-labelledby="git-review-staged-title">
+                    <h3 id="git-review-staged-title">Staged in index</h3>
+                    <div id="git-review-staged-list"></div>
+                  </section>
+                  <section class="git-review-group" id="git-review-unstaged" hidden aria-labelledby="git-review-unstaged-title">
+                    <h3 id="git-review-unstaged-title">Unstaged in worktree</h3>
+                    <div id="git-review-unstaged-list"></div>
+                  </section>
+                </section>
+              </div>
+
+              <div class="worktree-action-sheet" id="git-hunk-action-sheet" hidden>
+                <div class="worktree-action-card" role="dialog" aria-modal="true" aria-labelledby="git-hunk-action-title">
+                  <p class="eyebrow">USER GIT ACTION</p>
+                  <h2 id="git-hunk-action-title">Discard Git hunk</h2>
+                  <p id="git-hunk-action-detail"></p>
+                  <label for="git-hunk-action-field">Exact confirmation</label>
+                  <textarea id="git-hunk-action-field" rows="2" spellcheck="false"></textarea>
+                  <div class="worktree-action-buttons">
+                    <button class="button button-secondary" id="git-hunk-action-cancel" type="button">Cancel</button>
+                    <button class="button button-quiet-danger" id="git-hunk-action-confirm" type="button">Discard hunk</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" data-view-panel="activity" aria-labelledby="activity-title">
+            <div class="view-inner activity-layout">
+              <header class="view-heading">
+                <h1 id="activity-title">Activity</h1>
+              </header>
+
+              <article class="panel usage-panel">
+                <div class="usage-panel-head">
+                  <h2>Usage</h2>
+                </div>
+                <p class="usage-status" id="usage-status" data-kind="unknown" role="status">No usage data</p>
+                <p class="usage-source" id="usage-source" hidden></p>
+                <div class="usage-token-chart" id="usage-token-chart" aria-label="Provider-reported token categories; categories are not assumed additive" hidden>
+                  <div class="usage-token-list" id="usage-token-list"></div>
+                </div>
+                <div class="usage-cost" id="usage-cost" hidden>
+                  <span>Provider-reported cost</span>
+                  <strong id="usage-cost-value"></strong>
+                </div>
+                <div class="usage-empty" id="usage-empty">No usage data</div>
+              </article>
+
+              <article class="panel timeline-panel">
+                <div class="timeline-panel-head">
+                  <h2>Timeline</h2>
+                </div>
+                <p class="timeline-status" id="timeline-status" data-kind="ready" role="status" aria-live="polite">No events</p>
+                <div class="timeline-list" id="timeline-list" role="log" aria-label="Recent Activity events" aria-live="polite"></div>
+                <div class="timeline-empty" id="timeline-empty">No events</div>
+              </article>
+
+              <article class="panel diagnostic-panel">
+                <div class="diagnostic-panel-head">
+                  <h2>Diagnostics</h2>
+                </div>
+                <p class="diagnostic-copy">No prompts, secrets, or media.</p>
+                <div class="panel-actions">
+                  <button class="button button-primary" id="export-diagnostics" type="button">Export Diagnostic ZIP…</button>
+                </div>
+                <p class="diagnostic-status" id="diagnostic-status" data-kind="idle" role="status" aria-live="polite">No export yet</p>
+              </article>
+
+              <article class="panel diagnostic-result" id="diagnostic-result" hidden>
+                <strong>Last export</strong>
+                <dl>
+                  <div><dt>Path</dt><dd><code id="diagnostic-path"></code></dd></div>
+                  <div><dt>Archive SHA-256</dt><dd><code id="diagnostic-hash"></code></dd></div>
+                  <div><dt>Manifest SHA-256</dt><dd><code id="diagnostic-manifest-hash"></code></dd></div>
+                  <div><dt>Size</dt><dd id="diagnostic-size"></dd></div>
+                </dl>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-view-panel="checks" aria-labelledby="checks-title">
+            <div class="view-inner">
+              <header class="view-heading">
+                <h1 id="checks-title">Checks</h1>
+              </header>
+
+              <article class="panel security-panel">
+                <div class="security-panel-head">
+                  <div>
+                    <h2 id="security-status">Command security: Off</h2>
+                  </div>
+                  <span class="security-chip" id="security-chip" data-kind="off">Off</span>
+                </div>
+                <p class="security-copy" id="security-copy">Adds isolation to agent commands.</p>
+                <details class="security-detail">
+                  <summary>Details</summary>
+                  <span id="security-details">Run Check for Container to begin.</span>
+                </details>
+                <div class="panel-actions">
+                  <button class="button button-secondary" id="run-contained" type="button" data-security-action>Check for Container</button>
+                  <button class="button button-quiet-danger" id="command-security-off" type="button" data-security-action hidden>Turn off</button>
+                </div>
+                <form class="checks-command-form" id="terminal-form" hidden>
+                  <label for="terminal-command">Contained project command</label>
+                  <div>
+                    <input id="terminal-command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="pwd" />
+                    <button class="button button-secondary" id="terminal-run" type="submit" data-security-action>Run securely</button>
+                  </div>
+                </form>
+              </article>
+
+              <article class="panel outcome-panel" id="command-outcome-panel" hidden>
+                <div class="panel-kicker">LAST OUTCOME</div>
+                <p class="security-copy" id="command-outcome-summary" role="status" aria-live="polite">Not run yet. Choose Test contained run.</p>
+                <details class="security-detail"><summary>Details</summary><pre id="command-outcome">No contained command has been attempted.</pre></details>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-view-panel="account" aria-labelledby="account-title">
+            <div class="view-inner account-layout">
+              <header class="view-heading">
+                <h1 id="account-title">Account</h1>
+              </header>
+
+              <article class="about-card account-updates" aria-labelledby="account-updates-title">
+                <div>
+                  <span class="micro-label" id="account-updates-title">UPDATES</span>
+                  <h2 id="account-cli-version">Grok CLI</h2>
+                  <p id="grok-cli-compatibility" role="status" aria-live="polite">Updates Grok and its built-in features.</p>
+                  <details>
+                    <summary>What updates here?</summary>
+                    <p>Grok CLI updates directly from xAI. GB Plus, Browser and Voice components come with app releases. Third-party extensions keep their separate review step.</p>
+                  </details>
+                </div>
+                <button class="button button-secondary" id="update-grok-cli" type="button" data-account-action aria-describedby="grok-cli-compatibility" disabled>Update Grok CLI</button>
+              </article>
+
+              <article class="panel account-panel">
+                <div class="account-status-row">
+                  <div class="account-identity-mark" aria-hidden="true">G</div>
+                  <div class="account-status-copy">
+                    <span class="panel-kicker">LIVE CHAT CONNECTION</span>
+                    <h2 id="account-status">Not connected</h2>
+                    <p id="account-detail">Select and verify one live transport.</p>
+                  </div>
+                  <span class="account-chip" id="account-chip" data-connected="false">Not connected</span>
+                </div>
+
+                <div class="account-onboarding-actions">
+                  <button class="button button-primary account-primary-action" id="login-grok-cli" type="button" data-account-action>Connect with Grok Subscription</button>
+                  <button class="button button-secondary account-secondary-action" id="configure-xai-key" type="button" data-account-action>Connect with API key</button>
+                  <button class="button button-quiet" id="replace-xai-key" type="button" data-account-action hidden>Replace API key…</button>
+                </div>
+
+                <div class="account-onboarding-status" id="account-onboarding-status" data-phase="idle" role="status" aria-live="polite">
+                  <strong id="account-onboarding-status-title">Not connected</strong>
+                  <span id="account-onboarding-status-detail">Choose a connection method when you are ready to use Chat.</span>
+                </div>
+                <button class="button button-secondary account-inline-disconnect" id="account-disconnect" type="button" data-account-action hidden>Disconnect</button>
+
+                <div class="account-reconnect-row">
+                  <label class="account-reconnect-toggle" for="account-auto-reconnect">
+                    <input id="account-auto-reconnect" type="checkbox" data-account-action checked />
+                    <span>Reconnect automatically for 7 days</span>
+                  </label>
+                  <p id="account-reconnect-detail">Connect once to start a fixed seven-day reconnect window.</p>
+                </div>
+
+                <details class="account-cli-details" id="account-cli-details">
+                  <summary>Show details</summary>
+                  <pre id="account-cli-details-output">No CLI details yet. Secret-bearing lines and sign-in URLs are always withheld.</pre>
+                </details>
+
+                <details class="account-advanced">
+                  <summary>Other ways to connect</summary>
+                  <div class="transport-picker" role="radiogroup" aria-label="Live Chat transport">
+                    <button class="transport-option" type="button" role="radio" aria-checked="false" data-transport="XaiKeychain">
+                      <strong>API key</strong>
+                      <span>XaiKeychain · Direct xAI</span>
+                    </button>
+                    <button class="transport-option is-selected" type="button" role="radio" aria-checked="true" data-transport="GrokCliAcp">
+                      <strong>Grok Subscription</strong>
+                      <span>GrokCliAcp · Grok sign-in</span>
+                    </button>
+                  </div>
+
+                  <div class="account-credential-row">
+                    <div>
+                      <span>KEYCHAIN</span>
+                      <strong id="keychain-status">No xAI key stored</strong>
+                    </div>
+                    <button class="button button-quiet-danger" id="delete-xai-key" type="button" data-account-action>Remove key</button>
+                  </div>
+                  <div class="account-cli-row">
+                    <span>CLI</span>
+                    <code id="account-cli-path">Not found</code>
+                  </div>
+                  <div class="account-missing" id="account-missing">
+                    Grok CLI was not found. Install the official CLI, then return here. No login command runs automatically.
+                  </div>
+                  <div class="account-actions">
+                    <button class="button button-secondary" id="account-refresh" type="button" data-account-action>Check connection</button>
+                    <span id="account-transport-copy">Grok Subscription selected.</span>
+                  </div>
+                  <p>Resetting provider context starts fresh for the current chat. Its visible history and staged proposals remain available.</p>
+                  <button class="button button-secondary" id="reset-provider-context" type="button" data-account-action>Reset provider context</button>
+                </details>
+              </article>
+
+              <article class="panel account-panel">
+                <label for="engine-mode">Engine</label>
+                <select id="engine-mode" data-account-action aria-describedby="engine-description">
+                  <option value="gbPlusContained">GB Plus contained</option>
+                  <option value="grokCliStandard">Grok CLI standard</option>
+                </select>
+                <p id="engine-description">Choose the engine used for new Chat requests.</p>
+              </article>
+
+              <article class="panel account-voice-panel">
+                <header class="account-voice-head">
+                  <h2>Voice</h2>
+                  <p class="read-aloud-status" id="read-aloud-status" data-available="false" role="status" aria-live="polite">Grok Read Aloud unavailable</p>
+                </header>
+                <div class="voice-composer" aria-label="Local Voice input">
+                  <label class="voice-model-label" for="voice-model">
+                    <span class="sr-only">Transcription model</span>
+                    <select id="voice-model" aria-label="Local transcription model">
+                      <option value="base">Multilingual base · 141 MB</option>
+                      <option value="small">Multilingual small · 465 MB</option>
+                    </select>
+                  </label>
+                  <button class="button button-quiet" id="voice-install" type="button" data-busy-allowed>Install model</button>
+                  <button class="button button-secondary voice-record" id="voice-record" type="button" aria-pressed="false" data-busy-allowed>Record</button>
+                  <button class="button button-quiet-danger" id="voice-cancel" type="button" data-busy-allowed hidden>Discard</button>
+                  <button class="button button-secondary" id="voice-insert" type="button" data-busy-allowed hidden>Insert transcript</button>
+                  <button class="voice-refresh" id="voice-refresh" type="button" aria-label="Refresh microphone and model status" title="Refresh status only. This does not reload, clear, or reset Voice" data-busy-allowed>Refresh</button>
+                  <span class="voice-status" id="voice-status" data-kind="off" role="status" aria-live="polite">Checking…</span>
+                  <progress class="voice-progress" id="voice-progress" max="1" value="0" hidden aria-label="Voice model download progress"></progress>
+                </div>
+              </article>
+
+              <article class="about-card">
+                <div>
+                  <span class="micro-label">ABOUT GB PLUS</span>
+                  <h2 id="about-version">Version 0.2.1-plus</h2>
+                </div>
+                <div class="about-meta">
+                  <span id="about-runtime">Tauri 2</span>
+                  <span>MIT</span>
+                </div>
+              </article>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div class="boot-overlay" id="boot-overlay" role="status" aria-live="polite">
+      <span class="boot-indicator" aria-hidden="true">✦</span><span>Loading</span>
+    </div>
+    <div class="window-resize-handle resize-n" data-resize-direction="North" aria-hidden="true"></div>
+    <div class="window-resize-handle resize-e" data-resize-direction="East" aria-hidden="true"></div>
+    <div class="window-resize-handle resize-s" data-resize-direction="South" aria-hidden="true"></div>
+    <div class="window-resize-handle resize-w" data-resize-direction="West" aria-hidden="true"></div>
+    <div class="window-resize-handle resize-ne" data-resize-direction="NorthEast" aria-hidden="true"></div>
+    <div class="window-resize-handle resize-nw" data-resize-direction="NorthWest" aria-hidden="true"></div>
+    <div class="window-resize-handle resize-se" data-resize-direction="SouthEast" aria-hidden="true"></div>
+    <div class="window-resize-handle resize-sw" data-resize-direction="SouthWest" aria-hidden="true"></div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+      <span class="toast-dot" aria-hidden="true"></span>
+      <span id="toast-message"></span>
+    </div>
+  </body>
+</html>

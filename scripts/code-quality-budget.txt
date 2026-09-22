@@ -1,0 +1,8 @@
+# Source and release size limits.
+bundled_tauri_bytes 20366320
+keychain_broker_bytes 548768
+app_payload_bytes 26511991
+release_zip_bytes 13164135
+tauri_external_dependency_entries 415
+production_rust_lines 454116
+shipping_ui_lines 13845

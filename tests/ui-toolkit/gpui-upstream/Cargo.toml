@@ -1,0 +1,14 @@
+[package]
+name = "grok-build-gpui-upstream-evaluation"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.97.0"
+publish = false
+
+[dependencies]
+gpui = { package = "gpui", version = "=0.2.2", default-features = false, features = ["font-kit", "runtime_shaders", "wayland", "x11"] }
+
+[workspace]
+
+[lints.rust]
+unsafe_code = "forbid"

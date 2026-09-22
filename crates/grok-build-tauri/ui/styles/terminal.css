@@ -1,0 +1,303 @@
+:root {
+  --terminal-positive: #275E17;
+}
+
+.terminal-layout {
+  display: grid;
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding-bottom: 21px;
+  overflow: hidden;
+}
+
+.terminal-frame {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: 42px minmax(0, 1fr) 50px;
+  overflow: hidden;
+  border: 1px solid var(--secondary);
+  border-radius: 10px;
+  background: var(--ink);
+  box-shadow: 0 20px 52px var(--ink), inset 0 1px var(--ink);
+}
+
+.terminal-bar {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) max-content;
+  align-items: center;
+  padding: 0 13px;
+  border-bottom: 1px solid var(--secondary);
+  background: var(--ink);
+}
+
+.terminal-lights {
+  display: flex;
+  gap: 6px;
+}
+
+.terminal-lights span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--secondary);
+}
+
+.terminal-lights span:nth-child(2) {
+  opacity: 1;
+}
+
+.terminal-lights span:nth-child(3) {
+  opacity: 1;
+}
+
+.terminal-cwd {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.terminal-cwd span {
+  color: var(--secondary);
+  font-size: var(--type-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.terminal-cwd strong {
+  overflow: hidden;
+  color: var(--silver);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: var(--type-meta);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terminal-output {
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  padding: 17px 18px;
+  color: var(--primary);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: var(--type-copy);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.terminal-output.is-refusal,
+.outcome-panel pre.is-refusal {
+  border-radius: 5px;
+  background: var(--negative);
+  color: var(--primary);
+}
+
+.terminal-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px 8px 14px;
+  border-top: 1px solid var(--secondary);
+  background: var(--ink);
+}
+
+.terminal-prompt {
+  color: var(--terminal-positive);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 18px;
+}
+
+.terminal-form input {
+  height: 33px;
+  border-color: transparent;
+  background: transparent;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: var(--type-copy);
+  box-shadow: none;
+}
+
+.terminal-form input:hover {
+  border-color: var(--secondary);
+}
+
+.terminal-form input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.terminal-security-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 31px;
+  padding: 8px 4px 0;
+  color: var(--secondary);
+  font-size: var(--type-meta);
+}
+
+.terminal-viewport-wrap {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 6px 7px 12px;
+  background: var(--secondary);
+}
+
+.terminal-xterm,
+.terminal-xterm .xterm {
+  width: 100%;
+  height: 100%;
+}
+
+.terminal-xterm .xterm-viewport {
+  scrollbar-color: var(--secondary) var(--ink);
+}
+
+.terminal-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  padding: 28px;
+  color: var(--ink);
+  background: var(--secondary);
+  text-align: center;
+}
+
+.terminal-placeholder strong {
+  color: var(--ink);
+  font-size: var(--type-body);
+}
+
+.terminal-placeholder span {
+  max-width: 390px;
+  font-size: var(--type-meta);
+  line-height: 1.5;
+}
+
+.terminal-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 9px 7px 14px;
+  border-top: 1px solid var(--secondary);
+  background: var(--ink);
+}
+
+.terminal-shell-identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.terminal-shell-identity span {
+  color: var(--secondary);
+  font-size: var(--type-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.terminal-shell-identity strong {
+  overflow: hidden;
+  max-width: 360px;
+  color: var(--secondary);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: var(--type-meta);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terminal-control-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.terminal-state {
+  min-width: 0;
+  max-width: 100%;
+  justify-self: end;
+  overflow: hidden;
+  padding: 4px 7px;
+  border: 1px solid var(--secondary);
+  border-radius: 999px;
+  color: var(--secondary);
+  font-size: var(--type-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.terminal-state[data-state="starting"],
+.terminal-state[data-state="stopping"] {
+  border-color: var(--secondary);
+  color: var(--secondary);
+  background: var(--ink);
+}
+
+.terminal-state[data-state="live"] {
+  border-color: var(--terminal-positive);
+  color: var(--primary);
+  background: var(--terminal-positive);
+}
+
+.terminal-state[data-state="failed"] {
+  border-color: var(--negative);
+  color: var(--primary);
+  background: var(--negative);
+}
+
+.terminal-direct-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border: 1px solid var(--secondary);
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.checks-command-form {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--secondary);
+}
+
+.checks-command-form > label {
+  color: var(--silver);
+  font-size: var(--type-copy);
+  font-weight: 650;
+}
+
+.checks-command-form > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.checks-command-form input {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+.checks-command-form > span {
+  color: var(--secondary);
+  font-size: var(--type-meta);
+}
+
+@media (max-width: 940px) {
+  .terminal-shell-identity strong {
+    max-width: 260px;
+  }
+}

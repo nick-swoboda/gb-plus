@@ -1,0 +1,45 @@
+[package]
+name = "grok-build-plus-host"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# Original host code is MIT; the adapted prompt retains Apache-2.0.
+license = "MIT AND Apache-2.0"
+
+[features]
+default = []
+linux-guest-helper = []
+mcp-https = ["dep:reqwest", "dep:tokio"]
+responses-websocket = ["dep:tokio", "tokio/io-util", "dep:tokio-tungstenite", "dep:futures-util", "dep:log"]
+
+[dependencies]
+tokio-tungstenite = { version = "=0.28.0", default-features = false, features = ["connect", "handshake", "__rustls-tls"], optional = true }
+futures-util = { version = "=0.3.34", default-features = false, features = ["sink", "std"], optional = true }
+log = { version = "=0.4.33", default-features = false, optional = true }
+grok-build-core = { path = "../grok-build-core" }
+grok-build-providers = { path = "../grok-build-providers" }
+grok-build-runner = { path = "../grok-build-runner" }
+grok-build-runner-client = { path = "../grok-build-runner-client" }
+reqwest = { version = "=0.13.4", default-features = false, features = ["rustls-no-provider"], optional = true }
+tokio = { version = "=1.53.1", default-features = false, features = ["rt", "sync", "net", "time"], optional = true }
+rustix.workspace = true
+rustls = { version = "=0.23.42", default-features = false, features = [
+    "std",
+    "tls12",
+    "ring",
+] }
+rustls-platform-verifier = { version = "=0.7.0", default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+grok-build-runner = { path = "../grok-build-runner", features = ["test-support"] }
+
+[[bin]]
+name = "grok-build-linux-helper"
+path = "src/bin/grok-build-linux-helper.rs"
+required-features = ["linux-guest-helper"]
+
+[lints]
+workspace = true

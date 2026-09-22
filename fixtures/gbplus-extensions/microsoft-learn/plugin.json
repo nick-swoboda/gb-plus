@@ -1,0 +1,7 @@
+{
+  "name": "microsoft-learn",
+  "version": "0.1.0",
+  "description": "Public Microsoft Learn documentation through its HTTPS MCP endpoint.",
+  "license": "MIT",
+  "mcpServers": ".mcp.json"
+}

@@ -1,0 +1,158 @@
+name: Exact platform promotion preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exact-platform-preflight-${{ github.ref }}
+  cancel-in-progress: false
+
+# These jobs intentionally use native, ephemeral self-hosted machines. A
+# container on ubuntu-24.04 cannot prove host-kernel Landlock, namespace,
+# seccomp, cgroup, or Fedora behavior. This workflow is not Gate 1 evidence
+# until `grok-build-gate-1` drives the production fixture and emits a valid
+# evidence bundle. The checked-in fail-closed entrypoint currently emits a
+# non-completion diagnostic and exits nonzero, so the job remains red while the
+# diagnostic is still uploaded for inspection.
+jobs:
+  linux:
+    name: ${{ matrix.name }} native preflight
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 26.04 x86_64
+            distro_id: ubuntu
+            version_id: "26.04"
+            runner_labels: '["self-hosted","linux","x64","ubuntu-26.04","grok-build-isolation"]'
+          - name: Fedora 44 x86_64
+            distro_id: fedora
+            version_id: "44"
+            runner_labels: '["self-hosted","linux","x64","fedora-44","grok-build-isolation"]'
+    runs-on: ${{ fromJSON(matrix.runner_labels) }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Require an ephemeral gate executor
+        run: |
+          set -euo pipefail
+          test "${GROK_BUILD_EPHEMERAL_RUNNER:-}" = "1"
+          test -n "${GROK_BUILD_CGROUP_ROOT:-}"
+          test -d "${GROK_BUILD_CGROUP_ROOT}"
+          test -w "${GROK_BUILD_CGROUP_ROOT}"
+
+      - name: Check out the exact source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify native operating system and kernel controls
+        env:
+          EXPECTED_ID: ${{ matrix.distro_id }}
+          EXPECTED_VERSION_ID: ${{ matrix.version_id }}
+        run: |
+          set -euo pipefail
+          source /etc/os-release
+          test "${ID}" = "${EXPECTED_ID}"
+          test "${VERSION_ID}" = "${EXPECTED_VERSION_ID}"
+          test "$(uname -m)" = "x86_64"
+          test "$(stat -fc %T /sys/fs/cgroup)" = "cgroup2fs"
+          command -v bwrap
+          command -v unshare
+          command -v rustc
+          command -v cargo
+          unshare --user --map-root-user true
+
+      - name: Verify the pinned Rust toolchain
+        run: |
+          set -euo pipefail
+          test "$(rustc --version)" = "rustc 1.97.1 (8bab26f4f 2026-07-14)"
+          test "$(cargo --version)" = "cargo 1.97.1 (c980f4866 2026-06-30)"
+
+      - name: Run the clean Rust matrix
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          set -euo pipefail
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+          cargo test --workspace --all-targets --all-features --locked
+          cargo doc --workspace --all-features --no-deps --locked
+
+      - name: Run the production Gate 1 fixture and emit evidence
+        run: |
+          set -euo pipefail
+          cargo run --locked -p grok-build-desktop --bin grok-build-gate-1 -- \
+            --evidence-directory gate-evidence
+
+      - name: Upload the evidence candidate
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gate-1-${{ matrix.distro_id }}-${{ matrix.version_id }}-${{ github.sha }}
+          path: gate-evidence/
+          if-no-files-found: error
+          retention-days: 90
+
+  macos:
+    name: macOS 15 Apple Silicon native preflight
+    runs-on: [self-hosted, macOS, ARM64, macos-15, grok-build-isolation]
+    timeout-minutes: 45
+
+    steps:
+      - name: Require an ephemeral gate executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GROK_BUILD_EPHEMERAL_RUNNER:-}" = "1"
+          test "$(uname -m)" = "arm64"
+          test "$(sw_vers -productVersion | cut -d. -f1)" = "15"
+
+      - name: Check out the exact source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify the pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(rustc --version)" = "rustc 1.97.1 (8bab26f4f 2026-07-14)"
+          test "$(cargo --version)" = "cargo 1.97.1 (c980f4866 2026-06-30)"
+
+      - name: Run the clean Rust matrix
+        shell: bash
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          set -euo pipefail
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+          cargo test --workspace --all-targets --all-features --locked
+          cargo doc --workspace --all-features --no-deps --locked
+
+      - name: Run the production Gate 1 fixture and emit evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo run --locked -p grok-build-desktop --bin grok-build-gate-1 -- \
+            --evidence-directory gate-evidence
+
+      - name: Upload the evidence candidate
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gate-1-macos-15-arm64-${{ github.sha }}
+          path: gate-evidence/
+          if-no-files-found: error
+          retention-days: 90

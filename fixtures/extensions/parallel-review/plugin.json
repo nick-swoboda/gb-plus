@@ -1,0 +1,9 @@
+{
+  "name": "gbplus-parallel-review",
+  "version": "1.0.0",
+  "description": "Two isolated Grok reviews, followed by an explicit pause before displaying their combined result.",
+  "license": "MIT",
+  "workflows": [
+    "workflows"
+  ]
+}

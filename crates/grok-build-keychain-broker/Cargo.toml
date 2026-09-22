@@ -1,0 +1,71 @@
+[package]
+name = "grok-build-keychain-broker"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+build = "build.rs"
+
+[features]
+default = []
+broker-fixture = []
+
+[dependencies]
+sha2.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = { version = "=0.10.1", default-features = false, features = ["link"] }
+libc = { version = "=0.2.186", default-features = false }
+objc2-core-foundation = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "CFArray",
+    "CFString",
+] }
+objc2-security = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "SecACL",
+    "SecAccess",
+    "SecBase",
+    "SecKeychain",
+    "SecKeychainItem",
+    "SecTrustedApplication",
+    "cssmconfig",
+] }
+security-framework = { version = "=3.7.0", default-features = false }
+security-framework-sys = { version = "=2.17.0", default-features = false }
+
+[lib]
+name = "grok_build_keychain_broker"
+path = "src/lib.rs"
+
+[[bin]]
+name = "grok-build-keychain-broker"
+path = "src/main.rs"
+
+[[bin]]
+name = "grok-build-mcp-keychain-broker"
+path = "src/bin/mcp_broker.rs"
+
+[[bin]]
+name = "grok-build-keychain-broker-fixture"
+path = "src/bin/broker_fixture.rs"
+required-features = ["broker-fixture"]
+
+[[bin]]
+name = "grok-build-keychain-parent-fixture-a"
+path = "src/bin/parent_fixture_a.rs"
+required-features = ["broker-fixture"]
+
+[[bin]]
+name = "grok-build-keychain-parent-fixture-b"
+path = "src/bin/parent_fixture_b.rs"
+required-features = ["broker-fixture"]
+
+[[bin]]
+name = "grok-build-keychain-parent-fixture-unauthorized"
+path = "src/bin/parent_fixture_unauthorized.rs"
+required-features = ["broker-fixture"]
+
+[lints]
+workspace = true

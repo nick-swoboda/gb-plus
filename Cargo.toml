@@ -1,0 +1,67 @@
+[workspace]
+members = [
+    "crates/grok-build-keychain-broker",
+    "crates/grok-build-native-origin",
+    "crates/grok-build-core",
+    "crates/grok-build-runner",
+    "crates/grok-build-runner-client",
+    "crates/grok-build-providers",
+    "crates/grok-build-plus-host",
+    "crates/grok-build-desktop",
+    "crates/grok-build-tauri",
+    "crates/grok-build-workflow",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.2.1-plus"
+edition = "2024"
+rust-version = "1.97.1"
+license = "MIT"
+repository = "https://github.com/nick-swoboda/gb-plus"
+
+[workspace.dependencies]
+cap-fs-ext = { version = "=4.0.2", default-features = false, features = ["std"] }
+cap-std = { version = "=4.0.2", default-features = false }
+grok-build-native-origin = { path = "crates/grok-build-native-origin" }
+# Required Linux containment layers.
+landlock = { version = "=0.4.5", default-features = false }
+seccompiler = { version = "=0.5.0", default-features = false }
+rusqlite = { version = "=0.40.1", default-features = false, features = ["bundled", "functions"] }
+# Linux features: `net` passes held descriptors while procfs is closed to the
+# nondumpable runner's child; `system` reads kernel architecture; `mount` attaches
+# the observed `.git` mask through retained descriptors.
+rustix = { version = "=1.1.4", default-features = false, features = ["std", "event", "fs", "mount", "net", "process", "system", "thread"] }
+serde = { version = "=1.0.228", default-features = false, features = ["derive", "std"] }
+serde_json = { version = "=1.0.150", default-features = false, features = ["std"] }
+sha2 = { version = "=0.11.0", default-features = false }
+
+[workspace.lints.rust]
+# Only reviewed, target-gated OS FFI bridges opt out of this unsafe-code denial.
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+
+[profile.dev]
+# Keep file/line backtraces without full debug-info storage.
+debug = "line-tables-only"
+
+# Optimize dependencies to meet the ledger suite's CI budget. Workspace crates
+# retain opt-level 0 for fast rebuilds.
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[patch.crates-io]
+# Vendored Voice build patch; upstream licenses remain in the source directory.
+whisper-rs-sys = { path = "vendor/whisper-rs-sys-0.15.0-grok" }

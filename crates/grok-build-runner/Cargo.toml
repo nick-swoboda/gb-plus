@@ -1,0 +1,42 @@
+[package]
+name = "grok-build-runner"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = []
+future-contracts = []
+test-support = ["future-contracts"]
+
+[dependencies]
+cap-fs-ext.workspace = true
+cap-std.workspace = true
+grok-build-core = { path = "../grok-build-core" }
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+# Containment layers for the cgroup-v2 backend's FilesystemPolicy and
+# NetworkPolicy controls. Target-gated so no other platform resolves them.
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock.workspace = true
+seccompiler.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "grok-build-runner"
+path = "src/main.rs"
+
+# Development helper; never registered through SMAppService or used as production authority.
+[[bin]]
+name = "grok-build-dev-helper"
+path = "src/bin/grok-build-dev-helper.rs"
+
+[lints]
+workspace = true

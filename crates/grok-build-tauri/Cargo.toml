@@ -1,0 +1,125 @@
+[package]
+name = "grok-build-tauri"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+build = "build.rs"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cap-fs-ext.workspace = true
+cap-std.workspace = true
+grok-build-plus-host = { path = "../grok-build-plus-host", features = ["mcp-https", "responses-websocket"] }
+grok-build-workflow = { path = "../grok-build-workflow" }
+pulldown-cmark = { version = "=0.13.4", default-features = false }
+portable-pty = { version = "=0.9.0", default-features = false }
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tauri = { version = "=2.11.5", default-features = false, features = ["wry"] }
+zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+
+base64 = { version = "=0.22.1", default-features = false, features = ["std"] }
+reqwest = { version = "=0.13.4", default-features = false, features = ["rustls-no-provider"] }
+tokio = { version = "=1.53.1", default-features = false, features = ["rt", "sync", "net", "time"] }
+url = { version = "=2.5.8", default-features = false }
+block2 = { version = "=0.6.2", default-features = false, features = ["std"] }
+core-graphics = { version = "=0.25.0", default-features = false, features = ["elcapitan", "highsierra", "link"] }
+cpal = { version = "=0.18.1", default-features = false }
+grok-build-keychain-broker = { path = "../grok-build-keychain-broker", default-features = false }
+notify = { version = "=8.2.0", default-features = false, features = ["macos_fsevent"] }
+nix = { version = "=0.28.0", default-features = false, features = ["fs", "process", "signal"] }
+objc2 = { version = "=0.6.4", default-features = false, features = ["std"] }
+objc2-app-kit = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "objc2-core-foundation",
+    "NSAlert",
+    "NSApplication",
+    "NSButton",
+    "NSControl",
+    "NSOpenPanel",
+    "NSPanel",
+    "NSResponder",
+    "NSRunningApplication",
+    "NSSavePanel",
+    "NSSecureTextField",
+    "NSTextField",
+    "NSView",
+    "NSWindow",
+    "NSWorkspace",
+    "libc",
+] }
+objc2-foundation = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "block2",
+    "objc2-core-foundation",
+    "NSArray",
+    "NSData",
+    "NSError",
+    "NSGeometry",
+    "NSNotification",
+    "NSObject",
+    "NSOperation",
+    "NSString",
+    "NSURL",
+    "NSURLRequest",
+    "NSURLResponse",
+    "NSURLSession",
+] }
+objc2-av-foundation = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "AVCaptureDevice",
+    "AVMediaFormat",
+    "block2",
+] }
+objc2-core-graphics = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "CGBitmapContext",
+    "CGColorSpace",
+    "CGContext",
+    "CGDirectDisplay",
+    "CGGeometry",
+    "CGImage",
+    "CGSession",
+    "CGWindow",
+] }
+objc2-core-foundation = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "CFArray",
+    "CFDictionary",
+    "CFNumber",
+    "CFString",
+] }
+objc2-screen-capture-kit = { version = "=0.3.2", default-features = false, features = [
+    "std",
+    "SCError",
+    "SCScreenshotManager",
+    "SCShareableContent",
+    "SCStream",
+    "block2",
+    "libc",
+    "objc2-core-foundation",
+    "objc2-core-graphics",
+] }
+png = { version = "=0.18.1", default-features = false }
+rustls = { version = "=0.23.42", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-platform-verifier = { version = "=0.7.0", default-features = false }
+whisper-rs = { version = "=0.16.0", default-features = false }
+
+[target.'cfg(target_os = "macos")'.build-dependencies]
+tauri-build = { version = "=2.6.3", default-features = false, features = ["config-json"] }
+
+[lib]
+name = "grok_build_tauri"
+path = "src/lib.rs"
+
+[[bin]]
+name = "grok-build-tauri"
+path = "src/main.rs"
+
+[lints]
+workspace = true

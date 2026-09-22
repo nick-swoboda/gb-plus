@@ -1,0 +1,46 @@
+{
+  "_comment": [
+    "Run the library suite serially and enforce the executed-test floor and ignored-test ceiling.",
+    "Native runs allow no failures. Container failures must match the named missing-tool cases exactly.",
+    "Retry only the declared clock-regression signature, within its fixed attempt limit."
+  ],
+  "policy_version": 1,
+  "package": "grok-build-runner",
+  "target": "lib",
+  "test_threads": 1,
+  "min_executed": 691,
+  "max_ignored": 1,
+  "accepted_failures": [
+    {
+      "test": "command::tests::normal_parent_exit_still_cleans_orphaned_group_member",
+      "verdict": "The admitted container image lacks /bin/kill.",
+      "reason": "This Unix test exercises the macOS supervisor through an external kill utility. The admitted container lacks that executable; native Linux must run and pass the test.",
+      "to_run_it": "Use a separately reviewed container image containing /bin/kill and deliberately update this exception when the test passes."
+    },
+    {
+      "test": "command::tests::output_overflow_terminates_and_hashes_complete_observed_stream",
+      "verdict": "The admitted container image lacks /bin/kill.",
+      "reason": "This Unix test exercises the macOS supervisor through an external kill utility. The admitted container lacks that executable; native Linux must run and pass the test.",
+      "to_run_it": "Use a separately reviewed container image containing /bin/kill and deliberately update this exception when the test passes."
+    },
+    {
+      "test": "command::tests::timeout_kills_descendant_process_group",
+      "verdict": "The admitted container image lacks /bin/kill.",
+      "reason": "This Unix test exercises the macOS supervisor through an external kill utility. The admitted container lacks that executable; native Linux must run and pass the test.",
+      "to_run_it": "Use a separately reviewed container image containing /bin/kill and deliberately update this exception when the test passes."
+    },
+    {
+      "test": "command::tests::timeout_kills_direct_process_group",
+      "verdict": "The admitted container image lacks /bin/kill.",
+      "reason": "This Unix test exercises the macOS supervisor through an external kill utility. The admitted container lacks that executable; native Linux must run and pass the test.",
+      "to_run_it": "Use a separately reviewed container image containing /bin/kill and deliberately update this exception when the test passes."
+    }
+  ],
+  "remeasure_signatures": [
+    {
+      "signature": "system wall clock regressed behind the authenticated lifecycle boundary",
+      "reason": "A backwards CLOCK_REALTIME step invalidates the lifecycle measurement. Retry only this exact refusal, and fail if every allowed attempt repeats it.",
+      "max_attempts": 3
+    }
+  ]
+}

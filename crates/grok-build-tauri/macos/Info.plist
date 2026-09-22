@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleDisplayName</key>
+  <string>GB Plus</string>
+  <key>CFBundleExecutable</key>
+  <string>grok-build-tauri</string>
+  <key>CFBundleIconFile</key>
+  <string>GrokBuildPlus.icns</string>
+  <key>CFBundleIconFiles</key>
+  <array>
+    <string>GrokBuildPlus.icns</string>
+  </array>
+  <key>CFBundleIdentifier</key>
+  <string>com.grokbuild.plus</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>GB Plus</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>0.2.1</string>
+  <key>CFBundleVersion</key>
+  <string>2</string>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.developer-tools</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>15.0</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>NSHumanReadableCopyright</key>
+  <string>Copyright © 2026 GB Plus contributors</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>GB Plus records only when you choose Record, transcribes locally into an editable prompt, and discards audio from memory after transcription.</string>
+  <key>NSPrincipalClass</key>
+  <string>NSApplication</string>
+  <key>NSSupportsAutomaticGraphicsSwitching</key>
+  <true/>
+</dict>
+</plist>

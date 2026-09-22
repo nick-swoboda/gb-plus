@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-gate:
+    name: Linux verification gate / ubuntu-24.04
+    # This compatibility lane does not qualify other Linux distributions.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      # Match the gate so later steps reuse its compiled artifacts.
+      CARGO_INCREMENTAL: "0"
+      RUSTFLAGS: "-C link-arg=-Wl,--no-keep-memory"
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER: "python3 -B ${{ github.workspace }}/scripts/ci-test-runner.py"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned Rust toolchain
+        run: >-
+          rustup toolchain install 1.97.1
+          --profile minimal
+          --component clippy
+          --component rustfmt
+
+      - name: Select the pinned Rust toolchain
+        run: rustup override set 1.97.1
+
+      - name: Verify the toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(rustc --version)" = "rustc 1.97.1 (8bab26f4f 2026-07-14)"
+          test "$(cargo --version)" = "cargo 1.97.1 (c980f4866 2026-06-30)"
+
+      - name: Fetch locked dependencies for the offline gate
+        run: cargo fetch --locked
+
+      - name: Install reviewed Ubuntu build prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/ci-linux-prerequisites.py "$RUNNER_TEMP/gb-plus-native"
+          sudo -n dpkg --install "$RUNNER_TEMP/gb-plus-native/"*.deb
+          pkg-config --modversion fontconfig freetype2
+
+      - name: Check Linux test policy
+        run: |
+          python3 -B scripts/test-linux-test-policy.py
+          python3 -B scripts/test-ci-linux-prerequisites.py
+          python3 -B scripts/test-ci-test-runner.py
+
+      - name: Linux verification gate
+        run: ./scripts/linux-verify.sh --native
+
+      - name: Test workspace
+        run: cargo test --workspace --all-targets --all-features --locked
+
+      - name: Build documentation with warnings denied
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --workspace --no-deps --all-features --locked
+
+  macos:
+    name: Rust 1.97.1 / macos-15
+    runs-on: macos-15
+    timeout-minutes: 240
+    env:
+      CARGO_TARGET_AARCH64_APPLE_DARWIN_RUNNER: "python3 -B ${{ github.workspace }}/scripts/ci-test-runner.py"
+      CARGO_TARGET_X86_64_APPLE_DARWIN_RUNNER: "python3 -B ${{ github.workspace }}/scripts/ci-test-runner.py"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned Rust toolchain
+        run: >-
+          rustup toolchain install 1.97.1
+          --profile minimal
+          --component clippy
+          --component rustfmt
+
+      - name: Select the pinned Rust toolchain
+        run: rustup override set 1.97.1
+
+      - name: Verify the toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(rustc --version)" = "rustc 1.97.1 (8bab26f4f 2026-07-14)"
+          test "$(cargo --version)" = "cargo 1.97.1 (c980f4866 2026-06-30)"
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check Linux test policy
+        run: |
+          python3 -B scripts/test-linux-test-policy.py
+          python3 -B scripts/test-ci-linux-prerequisites.py
+          python3 -B scripts/test-ci-test-runner.py
+
+      - name: Build all targets
+        run: cargo build --workspace --all-targets --all-features --locked
+
+      - name: Lint all targets
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+      - name: Check large workspace isolation
+        run: >-
+          cargo test --workspace --all-targets --all-features --locked
+          collaboration::workspaces::tests::large_source_remains_isolated_while_foreign_agent_state_is_excluded
+          -- --exact
+
+      - name: Test workspace
+        run: cargo test --workspace --all-targets --all-features --locked
+
+      - name: Build documentation with warnings denied
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --workspace --no-deps --all-features --locked

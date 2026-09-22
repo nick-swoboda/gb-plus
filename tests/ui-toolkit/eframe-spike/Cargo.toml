@@ -1,0 +1,31 @@
+[package]
+name = "grok-build-eframe-spike"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.97.0"
+license = "MIT"
+publish = false
+
+[workspace]
+resolver = "3"
+
+[[bin]]
+name = "grok-build-eframe-spike"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { version = "=0.35.0", default-features = false, features = [
+    "accesskit",
+    "default_fonts",
+    "glow",
+    "wayland",
+    "x11",
+] }
+grok-build-core = { path = "../../../crates/grok-build-core" }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
