@@ -1,4 +1,4 @@
-# GB Plus 0.2.1-plus
+# GB Plus
 
 A project-based coding assistant for macOS 15 or later on Apple Silicon.
 This is an independent project, not an official xAI application.
@@ -16,20 +16,21 @@ This is an independent project, not an official xAI application.
 ## Start
 
 For this unsigned build, sign in with the official Grok CLI in Terminal first.
-In Account, select **Grok CLI standard**, then **Grok Subscription** and check
-the connection. Saved API-key connections and GB Plus-managed MCP credentials
+Add or open a project in Projects, then open Account and choose
+**Connect with Grok Subscription**. On an existing installation, choose
+**Use Grok CLI standard** under Updates first; finish or remove queued work
+before switching. Saved API-key connections and GB Plus-managed MCP credentials
 require a stable signed build; this package cannot use those Keychain bindings.
 Existing keys remain untouched.
 
-Add a project in Projects. Chat displays the newest
+Chat displays the newest
 messages at the bottom. Use the small model button above Chat to choose a model
 and reasoning effort. Send now steers active work; Send next queues another turn.
 Stop cancels the active run. Interrupted work is never replayed automatically.
 
-GB Plus contained is the default engine. It supports the existing xAI API-key
-connection and the admitted contained CLI. The optional Grok CLI standard engine
-uses the official Grok CLI and shares its normal sessions and configuration with
-Terminal. Its full session-management and settings integration is still in
+New installations use Grok CLI standard. Existing engine choices are preserved.
+Standard uses the official Grok CLI and shares its normal sessions and
+configuration with Terminal. Its full session-management and settings integration is still in
 development. Standard commands run on the Mac under the selected CLI permission
 mode; new chats begin in Ask. Choose that engine to use a current managed CLI.
 
@@ -75,7 +76,7 @@ BubblewrapSource retain their component notices and source distributions.
 
 ## Release status
 
-This is the 0.2.1-plus open-source preview. Full live-account, clean-Mac and
+This is an unsigned open-source preview. Full live-account, clean-Mac and
 VoiceOver qualification remains open, as does the complete standard-CLI
 integration. Current information is available at
 https://github.com/nick-swoboda/gb-plus.
