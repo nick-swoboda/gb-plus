@@ -74,7 +74,7 @@ verify_asset() {
 
 verify_workflow_notices() {
   workflow_notice_directory=$1
-  verify_asset "$workflow_notice_directory/SHA256SUMS" "98d584a9728bc2a1b98b04455eaff8f9355a5303cb9fe20d53bfd8e18286fe91"
+  verify_asset "$workflow_notice_directory/SHA256SUMS" "5a3961f4f8984feca800cf45a805b97133dbb26bd56d8f4455b82c4d1091c1c5"
   while read -r notice_hash notice_name; do
     verify_asset "$workflow_notice_directory/$notice_name" "$notice_hash"
   done < "$workflow_notice_directory/SHA256SUMS"
