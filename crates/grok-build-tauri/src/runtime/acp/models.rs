@@ -60,7 +60,11 @@ pub(super) fn apply_selection(
         .iter()
         .find(|model| model.id == selection.model.id)
         .ok_or("The saved model is no longer offered by this authenticated CLI.")?;
-    if (!offered.reasoning_efforts.is_empty() && selection.reasoning_effort.is_none())
+    let active_config =
+        process.is_standard() && config_option(&process.session_config, "model")?.is_some();
+    if (!active_config
+        && !offered.reasoning_efforts.is_empty()
+        && selection.reasoning_effort.is_none())
         || selection
             .reasoning_effort
             .as_ref()
@@ -68,7 +72,27 @@ pub(super) fn apply_selection(
     {
         return Err("The CLI no longer offers the selected reasoning effort.".into());
     }
-    process.request("session/set_model", &json!({"sessionId":session_id,"modelId":selection.model.id,"_meta":{"reasoningEffort":selection.reasoning_effort}}), events)?;
+    if active_config {
+        let mut config = process.request(
+            "session/set_config_option",
+            &json!({"sessionId":session_id,"configId":"model","value":selection.model.id}),
+            events,
+        )?;
+        if let Some(effort) = &selection.reasoning_effort {
+            if config_option(&config, "reasoning_effort")?.is_none() {
+                return Err("The CLI does not advertise reasoning controls for this model.".into());
+            }
+            config = process.request(
+                "session/set_config_option",
+                &json!({"sessionId":session_id,"configId":"reasoning_effort","value":effort}),
+                events,
+            )?;
+        }
+        validate_active_selection(&config, selection)?;
+        process.session_config["configOptions"] = config["configOptions"].clone();
+    } else {
+        process.request("session/set_model", &json!({"sessionId":session_id,"modelId":selection.model.id,"_meta":{"reasoningEffort":selection.reasoning_effort}}), events)?;
+    }
     let info = process.request(
         "_x.ai/session/info",
         &json!({"sessionId":session_id}),
@@ -76,6 +100,10 @@ pub(super) fn apply_selection(
     )?;
     if info.get("model").and_then(Value::as_str) != Some(selection.model.id.as_str()) {
         return Err("The CLI did not select the exact requested model; no prompt was sent.".into());
+    }
+    // Saved history may still describe the initial effort until the next turn.
+    if active_config {
+        return Ok(());
     }
     let state = process.request(
         "_x.ai/session/state",
@@ -95,3 +123,37 @@ pub(super) fn apply_selection(
     // verify_gateway subsequently checks the harness after the model switch.
     Ok(())
 }
+
+fn config_option<'a>(config: &'a Value, id: &str) -> Result<Option<&'a Value>, String> {
+    let Some(options) = config.get("configOptions") else {
+        return Ok(None);
+    };
+    let options = options
+        .as_array()
+        .filter(|items| items.len() <= 32)
+        .ok_or("CLI session controls are malformed or oversized.")?;
+    let mut matches = options.iter().filter(|option| option["id"] == id);
+    let option = matches.next();
+    if matches.next().is_some() || option.is_some_and(|option| option["type"] != "select") {
+        return Err("CLI session control is ambiguous or unsupported.".into());
+    }
+    Ok(option)
+}
+
+fn validate_active_selection(config: &Value, selection: &ModelSelection) -> Result<(), String> {
+    for (id, expected) in [
+        ("model", Some(selection.model.id.as_str())),
+        ("reasoning_effort", selection.reasoning_effort.as_deref()),
+    ] {
+        if let Some(expected) = expected
+            && config_option(config, id)?.and_then(|option| option["currentValue"].as_str())
+                != Some(expected)
+        {
+            return Err("The CLI did not confirm the requested active model and reasoning effort; no prompt was sent.".into());
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests;

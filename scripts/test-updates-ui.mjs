@@ -5,25 +5,33 @@ import { createUpdates } from "../crates/grok-build-tauri/ui/modules/updates.js"
 
 function fixture(respond) {
   const calls = [];
-  const current = { queue: { available: true, activeGlobalRuns: 0 }, account: { selectedTransport: "GrokCliAcp" } };
-  const button = { disabled: true, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; }, addEventListener(_, callback) { this.click = callback; } };
+  const current = { queue: { available: true, activeGlobalRuns: 0, items: [] }, account: {
+    selectedTransport: "GrokCliAcp", engine: { schemaVersion: 1, mode: "grokCliStandard", developerCli: null },
+  } };
+  const created = [];
+  const ownerDocument = { createElement(tag) {
+    const node = { tag, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; }, addEventListener(_, callback) { this.click = callback; } };
+    created.push(node); return node;
+  } };
+  const button = { ownerDocument, disabled: true, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; }, addEventListener(_, callback) { this.click = callback; } };
   const version = { textContent: "Grok CLI" };
-  const status = { textContent: "" };
+  const status = { textContent: "", after(...nodes) { this.following = nodes; } };
   let busy = false;
   let snapshots = 0;
   const controller = createUpdates({
     invoke: async (method, args) => {
       calls.push({ method, args });
       if (respond) return respond(method, args);
+      if (method === "set_engine_settings") return { ...current, account: { ...current.account, engine: args.settings } };
       return method === "bootstrap" ? current : { version: "1.0.30", detail: "Grok CLI is up to date." };
     },
     elements: { updateGrokCli: button, accountCliVersion: version, grokCliCompatibility: status },
     getSnapshot: () => current, getBusy: () => busy,
     setAccountBusy: value => { busy = value; },
-    onSnapshot: () => { snapshots += 1; controller.render(); },
+    onSnapshot: value => { Object.assign(current, value); snapshots += 1; controller.render(); },
   });
   controller.render();
-  return { controller, button, version, status, current, calls, snapshots: () => snapshots, busy: () => busy, setBusy: value => { busy = value; } };
+  return { controller, button, version, status, current, calls, switchButton: created[0], engineDetail: created[1], snapshots: () => snapshots, busy: () => busy, setBusy: value => { busy = value; } };
 }
 
 test("Account exposes one update button outside connection disclosures", () => {
@@ -126,4 +134,66 @@ test("API transport stays independent and provider strings are rendered only as 
   assert.equal(f.status.textContent, detail);
   assert.equal("innerHTML" in f.status, false);
   assert.equal(f.calls.some(call => call.method.includes("connect")), false);
+});
+
+test("updated contained connection offers an explicit standard switch without connecting or replaying work", async () => {
+  const f = fixture();
+  f.current.account.engine.mode = "gbPlusContained";
+  await f.controller.refresh();
+  assert.equal(f.switchButton.hidden, false);
+  assert.equal(f.switchButton.disabled, false);
+  assert.match(f.engineDetail.textContent, /commands run on your Mac/);
+  assert.match(f.switchButton.attributes["aria-describedby"], /grok-cli-engine-detail/);
+  assert.deepEqual(f.calls.map(call => call.method), ["inspect_grok_cli"]);
+  await f.switchButton.click();
+  assert.equal(f.current.account.engine.mode, "grokCliStandard");
+  assert.equal(f.switchButton.hidden, true);
+  assert.match(f.status.textContent, /Choose Connect when ready/);
+  assert.deepEqual(f.calls.map(call => call.method), ["inspect_grok_cli", "set_engine_settings"]);
+  assert.deepEqual(f.calls[1].args.settings, { schemaVersion: 1, mode: "grokCliStandard", developerCli: null });
+});
+
+test("a CLI update in contained mode reports the required switch, not a reconnect that will fail", async () => {
+  const f = fixture(method => method === "bootstrap" ? {} : {
+    version: "1.0.41", detail: "Updated from 1.0.25 to 1.0.41.",
+  });
+  f.current.account.engine.mode = "gbPlusContained";
+  await f.button.click();
+  assert.match(f.status.textContent, /Updated from 1\.0\.25 to 1\.0\.41/);
+  assert.match(f.status.textContent, /Switch to standard to use CLI updates/);
+  assert.doesNotMatch(f.status.textContent, /Choose Connect to reconnect/);
+  assert.equal(f.switchButton.hidden, false);
+  assert.equal(f.calls.some(call => call.method === "set_engine_settings"), false);
+});
+
+test("queued work, active work, missing queue state and busy operations prevent engine switching", async () => {
+  for (const queue of [
+    { available: false, activeGlobalRuns: 0 },
+    { available: true, activeGlobalRuns: 1 },
+    { available: true, activeGlobalRuns: 0, items: [{ state: "queued" }] },
+    { available: true, activeGlobalRuns: 0, items: [{ state: "running" }] },
+  ]) {
+    const f = fixture();
+    f.current.account.engine.mode = "gbPlusContained";
+    f.current.queue = queue;
+    await f.switchButton.click();
+    assert.equal(f.calls.length, 0);
+    assert.equal(f.switchButton.disabled, true);
+  }
+  const f = fixture();
+  f.current.account.engine.mode = "gbPlusContained";
+  f.setBusy(true);
+  await f.switchButton.click();
+  assert.equal(f.calls.length, 0);
+});
+
+test("a refused switch retains the engine and exposes the backend's reason", async () => {
+  const f = fixture(() => { throw new Error("Finish or remove queued work before switching engines."); });
+  f.current.account.engine.mode = "gbPlusContained";
+  await f.switchButton.click();
+  assert.match(f.status.textContent, /Finish or remove queued work/);
+  assert.equal(f.current.account.engine.mode, "gbPlusContained");
+  assert.equal(f.switchButton.disabled, false);
+  assert.equal(f.busy(), false);
+  assert.deepEqual(f.calls.map(call => call.method), ["set_engine_settings"]);
 });

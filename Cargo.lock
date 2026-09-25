@@ -2478,7 +2478,7 @@ checksum = "b40ca9252762c466af32d0b1002e91e4e1bc5398f77455e55474deb466355ff5"
 
 [[package]]
 name = "grok-build-core"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "grok-build-native-origin",
  "rusqlite",
@@ -2490,7 +2490,7 @@ dependencies = [
 
 [[package]]
 name = "grok-build-desktop"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "grok-build-core",
  "grok-build-plus-host",
@@ -2508,7 +2508,7 @@ dependencies = [
 
 [[package]]
 name = "grok-build-keychain-broker"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "core-foundation 0.10.1",
  "libc",
@@ -2521,11 +2521,11 @@ dependencies = [
 
 [[package]]
 name = "grok-build-native-origin"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 
 [[package]]
 name = "grok-build-plus-host"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "futures-util",
  "grok-build-core",
@@ -2546,7 +2546,7 @@ dependencies = [
 
 [[package]]
 name = "grok-build-providers"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "grok-build-core",
  "serde",
@@ -2556,7 +2556,7 @@ dependencies = [
 
 [[package]]
 name = "grok-build-runner"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "cap-fs-ext",
  "cap-std",
@@ -2571,7 +2571,7 @@ dependencies = [
 
 [[package]]
 name = "grok-build-runner-client"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "grok-build-core",
  "grok-build-providers",
@@ -2584,7 +2584,7 @@ dependencies = [
 
 [[package]]
 name = "grok-build-tauri"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "base64 0.22.1",
  "block2 0.6.2",
@@ -2624,7 +2624,7 @@ dependencies = [
 
 [[package]]
 name = "grok-build-workflow"
-version = "0.2.1-plus"
+version = "0.2.2-plus"
 dependencies = [
  "rhai",
  "serde",

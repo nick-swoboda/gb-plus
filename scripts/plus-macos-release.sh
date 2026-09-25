@@ -286,7 +286,7 @@ GROK_BUILD_REVISION="$build_revision" GROK_BUILD_DIRTY="$build_dirty" \
 minimum_os=$(/usr/bin/otool -l "$binary_source" | /usr/bin/awk '$1 == "minos" { print $2; exit }')
 [ "$minimum_os" = "15.0" ] || fail "Mach-O minimum OS is $minimum_os, expected 15.0"
 raw_version=$("$binary_source" --version) || fail "raw release version check failed"
-[ "$raw_version" = "GB Plus 0.2.1-plus" ] \
+[ "$raw_version" = "GB Plus 0.2.2-plus" ] \
   || fail "raw release version output was unexpected"
 raw_smoke=$("$binary_source" --tauri-smoke) || fail "raw release smoke failed"
 case "$raw_smoke" in

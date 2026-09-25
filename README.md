@@ -10,7 +10,7 @@ GB Plus is an independent project and is not an official xAI application.
 [Download GB Plus](https://github.com/nick-swoboda/gb-plus/releases)
 for **Apple Silicon and macOS 15 or later**.
 
-The current release, **0.2.1-plus**, is an unsigned open-source preview. It uses
+This is an unsigned open-source preview. It uses
 an ad-hoc platform signature and is not Developer ID signed or notarized.
 
 1. Download `gb-plus-macos-arm64-unsigned.zip` and `SHA256SUMS`.
@@ -29,13 +29,14 @@ GB Plus uses the managed installation at `~/.grok/bin/grok`.
 Install it using [xAI's instructions](https://github.com/xai-org/grok-build#installing-the-released-binary),
 or reuse an existing managed installation. No upstream source checkout is needed.
 
-This preview's standard connection was tested with **Grok CLI 1.0.30**. Standard
-mode verifies xAI's publisher signature and has no version cap; compatibility
-with later releases is not yet verified. The older contained CLI connection
+CLI sign-in, session setup, model selection and a Grok 4.7 High reply were
+verified with **Grok CLI 1.0.41**. Standard mode verifies xAI's publisher signature
+and has no version cap; future releases still need compatibility checks.
+The older contained CLI connection
 requires its admitted **1.0.25** binary.
 
-1. Open **Account** and select **Grok CLI standard**, then **Grok Subscription**.
-2. Connect and add a project in **Projects**.
+1. Add or open a project in **Projects**.
+2. Open **Account**, use **Grok CLI standard**, then **Connect with Grok Subscription**.
 3. Open **Chat**. The model button selects the model and reasoning effort.
 4. Review the CLI's edit preview and permission request before allowing changes.
 
@@ -61,8 +62,10 @@ optional capabilities start disabled.
 
 ## Preview limitations
 
-**GB Plus contained** remains the default engine; choose **Grok CLI standard**
-for the unsigned download. App-managed API-key and MCP credential storage
+New installations use **Grok CLI standard**. Existing engine choices are
+preserved; **Account → Updates → Use Grok CLI standard** switches an older
+installation explicitly, after queued work is finished or removed. Connect
+again when ready. App-managed API-key and MCP credential storage
 requires a stable signed build. Existing stored keys are preserved.
 
 Standard CLI commands and the interactive Terminal run on your Mac. Optional

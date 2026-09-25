@@ -111,3 +111,6 @@ impl RuntimeManager {
         self.engine.images.discard_queued(item)
     }
 }
+
+#[cfg(test)]
+mod tests;

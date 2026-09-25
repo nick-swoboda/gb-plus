@@ -24,7 +24,7 @@ fn maintenance_uses_the_managed_install_and_normal_cli_environment() {
 
 #[test]
 fn maintenance_accepts_future_versions_without_relaxing_contained_admission() {
-    for release in ["1.0.30", "2.0.0", "3.1.2-rc.4+build5"] {
+    for release in ["1.0.30", "1.0.41", "2.0.0", "3.1.2-rc.4+build5"] {
         let line = format!("grok {release} (fixture) [stable]\n");
         assert_eq!(version(line.as_bytes()).unwrap(), release);
     }

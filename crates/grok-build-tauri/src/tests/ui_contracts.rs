@@ -376,7 +376,7 @@ fn first_run_is_not_connected_with_honest_off_status() {
     let root = fixture_root("first-run");
     let mut backend = Backend::new(PlusSessionStore::from_state_root(root.join("state")));
     let snapshot = backend.snapshot();
-    assert_eq!(snapshot.version, "0.2.1-plus");
+    assert_eq!(snapshot.version, "0.2.2-plus");
     assert_eq!(snapshot.security.kind, "off");
     assert_eq!(snapshot.security.status, "Command security: Off");
     assert_eq!(snapshot.security.copy, "Adds isolation to agent commands.");
@@ -462,15 +462,25 @@ fn workflow_completion_preserves_chat_across_transports_and_reload() {
     use crate::backend::PreparedQueuedRun;
     use crate::contracts::{QueueItemId, WorkspaceId};
     use crate::queue::workflows::WorkflowTicket;
+    use crate::runtime::engine::{EngineMode, EngineSettings};
     use crate::runtime::manager::RuntimeManager;
     use crate::runtime::types::{AdapterTurn, AdapterTurnOutcome, RuntimeTransport};
     use grok_build_plus_host::{PendingFileSet, bind_project_folder};
 
-    for transport in [RuntimeTransport::GrokCliAcp, RuntimeTransport::XaiKeychain] {
+    for (mode, transport) in [
+        (EngineMode::GrokCliStandard, RuntimeTransport::GrokCliAcp),
+        (EngineMode::GbPlusContained, RuntimeTransport::GrokCliAcp),
+        (EngineMode::GbPlusContained, RuntimeTransport::XaiKeychain),
+    ] {
         let root = fixture_root("workflow-chat-boundary");
         let workspace = root.join("workspace");
         fs::create_dir_all(&workspace).unwrap();
         let mut backend = Backend::new(PlusSessionStore::from_state_root(root.join("state")));
+        let settings = EngineSettings {
+            mode,
+            ..Default::default()
+        };
+        backend.set_engine(settings.clone()).unwrap();
         backend.bind_project(workspace.to_str().unwrap()).unwrap();
         let session = SessionId::new(backend.store.active_plus_session_id().unwrap());
         let original = "You: earlier question\nAssistant: earlier reply";
@@ -479,6 +489,7 @@ fn workflow_completion_preserves_chat_across_transports_and_reload() {
             .append_chat_turn_to_session(session.as_str(), original)
             .unwrap();
         let mut runtime = RuntimeManager::offline(root.join("runtime"));
+        runtime.set_engine(settings).unwrap();
         runtime.select(transport).unwrap();
         let prepared = PreparedQueuedRun {
             queue_item_id: QueueItemId::new("workflow-attempt"),

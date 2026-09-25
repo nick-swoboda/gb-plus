@@ -145,7 +145,7 @@ def export(root, output, tokens):
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for name, data in sorted(payloads.items()):
-            entry = zipfile.ZipInfo("gb-plus-0.2.1-plus/" + name, (1980, 1, 1, 0, 0, 0))
+            entry = zipfile.ZipInfo("gb-plus-0.2.2-plus/" + name, (1980, 1, 1, 0, 0, 0))
             entry.create_system = 3
             entry.external_attr = (0o100755 if files.get(name, {}).get("mode") == "100755" else 0o100644) << 16
             entry.compress_type = zipfile.ZIP_DEFLATED
@@ -154,7 +154,7 @@ def export(root, output, tokens):
         if archive.comment or len(archive.infolist()) != len(payloads):
             raise ValueError("Source ZIP inventory differs")
         for entry in archive.infolist():
-            name = entry.filename.removeprefix("gb-plus-0.2.1-plus/")
+            name = entry.filename.removeprefix("gb-plus-0.2.2-plus/")
             if entry.extra or entry.comment or archive.read(entry) != payloads[name]:
                 raise ValueError("Source ZIP readback differs")
     return {"schemaVersion": 1, **identity, "passed": True, "sourceFiles": len(files),

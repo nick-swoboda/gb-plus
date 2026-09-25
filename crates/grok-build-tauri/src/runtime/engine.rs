@@ -38,11 +38,31 @@ impl EngineSettings {
             .file("engine-v1.json", 16 * 1024)
             .map_err(|e| e.to_string())?;
         let Some(bytes) = file.read().map_err(|e| e.to_string())? else {
-            return Ok(Self::default());
+            return Self::initialize(root);
         };
         let settings: Self = serde_json::from_slice(&bytes)
             .map_err(|_| "Engine settings could not be read; the original file was retained.")?;
         settings.validate()?;
+        Ok(settings)
+    }
+
+    fn initialize(root: &Path) -> Result<Self, String> {
+        let mut settings = Self {
+            mode: EngineMode::GrokCliStandard,
+            ..Self::default()
+        };
+        // Existing reconnect grants and queued work retain their original authority.
+        for name in [
+            super::account_preferences::ACCOUNT_PREFERENCES_FILE,
+            crate::queue::PLUS_QUEUE_FILE,
+        ] {
+            match std::fs::symlink_metadata(root.join(name)) {
+                Ok(_) => settings.mode = EngineMode::GbPlusContained,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(format!("Cannot inspect existing engine state: {error}")),
+            }
+        }
+        settings.save(root)?;
         Ok(settings)
     }
 
@@ -94,49 +114,4 @@ pub(crate) fn managed_cli() -> Result<PathBuf, String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn contained_remains_default_and_unknown_engines_do_not_execute() {
-        assert_eq!(EngineSettings::default().mode, EngineMode::GbPlusContained);
-        assert!(EngineSettings::default().developer_cli.is_none());
-        assert!(
-            serde_json::from_str::<EngineSettings>(
-                r#"{"schemaVersion":1,"mode":"futureEngine","developerCli":null}"#
-            )
-            .is_err()
-        );
-        assert!(
-            EngineSettings {
-                schema_version: 2,
-                ..EngineSettings::default()
-            }
-            .validate()
-            .is_err()
-        );
-    }
-
-    #[test]
-    fn engine_changes_keep_a_reversible_backup() {
-        let root = std::env::temp_dir().join(format!(
-            "gbplus-engine-{}-{}",
-            std::process::id(),
-            super::super::types::unix_time_millis()
-        ));
-        let original = EngineSettings::default();
-        original.save(&root).unwrap();
-        let bytes = std::fs::read(root.join("engine-v1.json")).unwrap();
-        let changed = EngineSettings {
-            mode: EngineMode::GrokCliStandard,
-            ..original
-        };
-        changed.save(&root).unwrap();
-        assert_eq!(
-            std::fs::read(root.join("engine-before-change.json")).unwrap(),
-            bytes
-        );
-        assert_eq!(EngineSettings::load(&root).unwrap(), changed);
-        std::fs::remove_dir_all(root).unwrap();
-    }
-}
+mod tests;

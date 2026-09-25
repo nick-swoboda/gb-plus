@@ -114,11 +114,15 @@ impl ProviderSecretStore for CountingSecrets {
 static NEXT_RUNTIME_TEST: AtomicUsize = AtomicUsize::new(1);
 
 fn runtime_fixture_root(label: &str) -> PathBuf {
-    std::env::temp_dir().join(format!(
+    let root = std::env::temp_dir().join(format!(
         "grok-build-runtime-{label}-{}-{}",
         std::process::id(),
         NEXT_RUNTIME_TEST.fetch_add(1, Ordering::Relaxed)
-    ))
+    ));
+    crate::runtime::engine::EngineSettings::default()
+        .save(&root)
+        .expect("contained transport fixture");
+    root
 }
 
 #[test]

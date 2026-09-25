@@ -80,7 +80,7 @@ use grok_build_runner_client::{
 };
 
 /// User-visible GB Plus version printed by `--version` and `--plus-smoke`.
-pub const PLUS_PRODUCT_VERSION: &str = "0.2.1-plus";
+pub const PLUS_PRODUCT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub use plus_account::{PlusAccountState, connect_plus_grok_account, probe_plus_grok_account};
 pub use plus_attach::{

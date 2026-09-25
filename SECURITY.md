@@ -13,7 +13,7 @@ when requested. This preview has no guaranteed response or resolution time.
 
 ## Current release
 
-**0.2.1-plus** is an unsigned open-source preview for macOS 15 or later on Apple
+**0.2.2-plus** is an unsigned open-source preview for macOS 15 or later on Apple
 Silicon. It is not Developer ID signed or notarized. Full live-account,
 VoiceOver and clean-Mac qualification remains open.
 

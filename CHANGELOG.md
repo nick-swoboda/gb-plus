@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.2.2-plus
 
+- Use Grok CLI standard for new installations and offer a direct switch in
+  Account for older installations after CLI updates. Preserve existing engine
+  choices, isolated child permissions and queued work.
+- Apply model and reasoning choices through the CLI's advertised session
+  controls, and verify the active selection before saving it.
 - Fix clean-runner Linux CI prerequisites and an x86-only test lint.
 - Correct CI test isolation and Linux development-probe linkage.
 - Speed up large workspace snapshots while retaining existing limits.
