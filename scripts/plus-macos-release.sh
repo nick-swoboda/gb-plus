@@ -288,6 +288,10 @@ minimum_os=$(/usr/bin/otool -l "$binary_source" | /usr/bin/awk '$1 == "minos" { 
 raw_version=$("$binary_source" --version) || fail "raw release version check failed"
 [ "$raw_version" = "GB Plus 0.2.3-plus" ] \
   || fail "raw release version output was unexpected"
+bundle_short_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist_source") \
+  || fail "bundle version could not be read"
+[ "$raw_version" = "GB Plus $bundle_short_version-plus" ] \
+  || fail "bundle version does not match the release executable"
 raw_smoke=$("$binary_source" --tauri-smoke) || fail "raw release smoke failed"
 case "$raw_smoke" in
   "TAURI HOST SMOKE PASSED "*) ;;
