@@ -4,7 +4,7 @@
     // The split below is deliberate and is the same one the setup-channel mint
     // uses. The **live half** (`cfg(target_os = "linux")`) measures only real
     // files: a real static ELF, a real dynamic ELF, a real relocatable object,
-    // a real non-ELF file, and real truncations of a real binary — every one of
+    // a real non-ELF file, and real truncations of a real binary, every one of
     // them read through a descriptor the test holds open. The **portable half**
     // assembles headers, because no Linux ELF exists on a macOS host and
     // because the geometries it varies (a wrong `e_phentsize`, the `PN_XNUM`
@@ -428,7 +428,7 @@
     /// object, this test binary itself, the fixture's own Rust source as a
     /// non-ELF file, and real truncations of the real static ELF. The only
     /// derived inputs are the two cross-machine copies, because the pinned
-    /// image carries no cross toolchain and no foreign-architecture binary —
+    /// image carries no cross toolchain and no foreign-architecture binary,
     /// they are the real static ELF with its two `e_machine` bytes rewritten,
     /// and nothing else about them differs.
     #[cfg(target_os = "linux")]

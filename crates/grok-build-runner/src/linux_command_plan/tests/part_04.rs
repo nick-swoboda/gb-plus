@@ -4,7 +4,7 @@
     // a real `move_mount` and reads the destination out of the kernel. This
     // half varies one kernel answer at a time and requires a named refusal, so
     // every way the binding can be broken is provable on a host with no Linux
-    // kernel in front of it — including the ways a privileged container is
+    // kernel in front of it, including the ways a privileged container is
     // needed to produce for real.
 
     /// The control project view the mask below covers.
@@ -335,7 +335,7 @@
     // The mint itself cannot be exercised on a host with no `bwrap`, because
     // `AuthenticatedBubblewrapImageV1` can only exist where the admitted image
     // does. What is portable is everything the mint chooses rather than
-    // measures — the namespace layout and the contract constructors — and
+    // measures, the namespace layout and the contract constructors, and
     // those are exactly the parts a reviewer most needs held to the same
     // validators the plan applies.
 
@@ -364,9 +364,9 @@
             "two namespace destinations collide, so two mounts would too"
         );
 
-        // A read-only worker executes in the live workspace itself — the
+        // A read-only worker executes in the live workspace itself, the
         // equality `validate_mounts` requires when it crosses the execution
-        // mount against the retained grant root — and the other two views do
+        // mount against the retained grant root, and the other two views do
         // not.
         assert_eq!(
             execution_namespace_root(LinuxExecutionViewV1::WorkerReadOnly),
@@ -493,7 +493,7 @@
     //
     // `validate_cgroup` used to require the service cgroup parent and the
     // delegation to share one owner. Under delegation as the kernel documents
-    // it — and as this project's own installer performs it — they do not: the
+    // it, and as this project's own installer performs it, they do not: the
     // delegator keeps the parent and chowns only the delegated subtree. The
     // clause has been replaced by what it was reaching for, and this is the
     // portable half of that claim: one field varied per arm, against the same
@@ -571,8 +571,8 @@
         }
 
         // Enforced: the delegated subtree owned by someone who is not the
-        // service. Both directions are refused — a third identity, and the
-        // delegator keeping it — because either means no delegation happened.
+        // service. Both directions are refused, a third identity, and the
+        // delegator keeping it, because either means no delegation happened.
         for owner in [2_000, DELEGATOR_UID] {
             let refusal = delegation_refusal(vary_object(&valid, delegation, |object| {
                 object.owner_uid = owner;
@@ -644,7 +644,7 @@
     /// time, and both sites were corrected together.
     ///
     /// A complete plan cannot reach it with a crossed parent, because
-    /// `validate_cgroup` runs first and refuses — equally true of the clause it
+    /// `validate_cgroup` runs first and refuses, equally true of the clause it
     /// replaces. So the second site is exercised directly, which is the only
     /// way to show it states the corrected boundary rather than the old
     /// equality.
@@ -670,7 +670,7 @@
         release_verdict(&valid.plan.components.retained)
             .expect("the release site admits documented delegation");
 
-        // Enforced: the parent brought inside the service's owner set — which
+        // Enforced: the parent brought inside the service's owner set, which
         // is exactly what this site used to require.
         let mut service_owned_parent = valid.plan.components.retained.clone();
         for object in &mut service_owned_parent.objects {
@@ -731,7 +731,7 @@
     /// committed at `78d05a7` before the version-5 bump. One-way for the same
     /// reason the version-3 record is: a plan carries live identities and a
     /// temporary-directory name embedding a process id. It is aarch64 where the
-    /// version-3 record is `x86_64` — a property of where each was captured, and
+    /// version-3 record is `x86_64`, a property of where each was captured, and
     /// irrelevant to a refusal that happens before any architecture field is
     /// read.
     const SCHEMA_V4_RECORD: &str = "fixtures/linux-plan-schema/schema-v4-command-plan-record.json";
@@ -740,8 +740,8 @@
     ///
     /// Version 5's addition is a second committed filter beside the first, so
     /// the refusal has to hold on two independent grounds and does: the schema
-    /// version differs, and — because `LinuxSeccompPlanV1` is
-    /// `deny_unknown_fields` with a required `namespace_filter` — a renumbered
+    /// version differs, and, because `LinuxSeccompPlanV1` is
+    /// `deny_unknown_fields` with a required `namespace_filter`, a renumbered
     /// version-4 document is still refused by the decoder itself. Renumbering
     /// is not a migration path.
     #[test]
@@ -813,20 +813,20 @@
     /// blocker captured the same builder's output at 13,408 bytes with plan
     /// digest `44a7293e…`; that artefact differed from this one only in the
     /// transient temporary-directory name it carried, which embeds a process
-    /// id, and it was recorded rather than committed — so it cannot be
+    /// id, and it was recorded rather than committed, so it cannot be
     /// reproduced and this one is committed instead.
     const SCHEMA_V3_RECORD: &str = "fixtures/linux-plan-schema/schema-v3-command-plan-record.json";
 
     /// A persisted version-3 record is refused by name, and never migrated.
     ///
-    /// Plans **are** persisted — `persist_complete_command_plan` writes
-    /// canonical bytes into the journal directory — and they **are** re-read at
+    /// Plans **are** persisted, `persist_complete_command_plan` writes
+    /// canonical bytes into the journal directory, and they **are** re-read at
     /// open, through `decode_exact`. So a schema increment owes a disposition
     /// for every record already on disk, and this test drives it with real
     /// version-3 bytes rather than with a hand-written document.
     ///
     /// Two things are asserted, and the second is the one that matters. The
-    /// refusal names both versions, which the version-3 message did not do —
+    /// refusal names both versions, which the version-3 message did not do,
     /// it said only that "the schema version differs", leaving an operator with
     /// no way to tell what was found or what was wanted. And the record is not
     /// migratable by rewriting that number: the version-3 document's mandatory

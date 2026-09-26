@@ -8,10 +8,10 @@
     // Bubblewrap probe whose honest output the validator refuses blocks the
     // authority no matter what the other three say.
     //
-    // The test therefore does exactly what a production mint would do — hold
+    // The test therefore does exactly what a production mint would do, hold
     // the admitted image open, prove by whole-content digest that it *is* the
     // admitted image, execute it through that held descriptor, and submit the
-    // measured answer to the untouched validator — and records the verdict.
+    // measured answer to the untouched validator, and records the verdict.
     // -----------------------------------------------------------------------
 
     /// The admitted Bubblewrap image's self-reported version, measured live,

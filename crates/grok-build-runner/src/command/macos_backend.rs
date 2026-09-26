@@ -24,33 +24,15 @@ pub(crate) const MACOS_DEDICATED_IDENTITY_BACKEND_ID: &str = "macos-dedicated-id
 const MACOS_DEDICATED_IDENTITY_IMPLEMENTATION_DOMAIN: &[u8] =
     b"grok-build/macos-dedicated-identity-backend/v1";
 
-/// Exact reason this backend cannot yet authorize a contained launch.
-///
-/// ADR-0006 selects the signed dedicated-identity helper as the only macOS
-/// launch bridge. Until that transport exists the backend holds no reserved
-/// identity, cannot perform a held descriptor-exec, cannot install a
-/// kernel-enforced descendant limit, and cannot prove a whole-domain kill.
-/// Reporting anything other than a refusal here would be a false control
-/// claim, so every launch-path method returns this typed capability error.
+/// Typed refusal when the native macOS launch bridge cannot prove its
+/// reserved identity, descriptor-exec, descendant limit or whole-domain kill.
 pub(crate) const MACOS_DEDICATED_IDENTITY_TRANSPORT_UNAVAILABLE: &str = "the macOS dedicated-identity helper transport is not installed; this backend holds no reserved execution identity and therefore enforces none of the mandatory contained-execution controls";
 
-/// Why an unprivileged run cannot mint contained terminal evidence.
-///
-/// This used to be a signing obstruction: `from_macos_candidate` validated
-/// an admission session that had to be `production_signed`, so no
-/// build-from-source installation could ever reach terminal evidence.
-/// ADR-0012 removed that; a locally attested session now closes the chain,
-/// which is proved in `cleanup_proof`'s
-/// `a_locally_attested_admission_session_closes_the_macos_terminal_evidence_chain`.
-///
-/// What remains is host authority, and it is not repairable by any
-/// certificate. `MacosCleanupEvidence` requires a `MacosAssignedIdentity`:
-/// a named, non-root, locked local account whose real UID the helper
-/// enumerates to prove the domain empty. Creating such an account needs
-/// root, so the unprivileged pool has none — `dedicated_account` is
-/// validated to be `false` on every record it issues — and nothing in that
-/// module produces the production identity type. Constructing one anyway
-/// would be the exact substitution the contract exists to prevent.
+/// Unprivileged runs cannot mint production terminal evidence because they
+/// lack a `MacosAssignedIdentity`: a dedicated, locked local execution account
+/// created by root. Local code attestation satisfies the signing check, but
+/// does not supply that account. Development records require
+/// `dedicated_account == false`.
 pub(crate) const MACOS_DEVELOPMENT_CLEANUP_PROOF_UNAVAILABLE: &str = "an unprivileged dedicated-identity run cannot mint a command-domain cleanup proof: the only macOS constructor requires an assigned local execution account, whose creation needs root, and the unprivileged identity pool is validated to own none";
 
 /// Composed macOS containment backend for one contained command.
@@ -530,28 +512,16 @@ const DEVELOPMENT_CANARY_PROGRAMS: [DevelopmentCanaryProgram; 10] = [
 const DEVELOPMENT_COMMAND_ENTRY: &str = "command-executable";
 
 impl MacosDedicatedIdentityBackend {
-    /// Composes the **development** dedicated-identity backend.
-    ///
-    /// This constructor is the architecture document's sanctioned
-    /// development build and nothing more. It shares every authority check
-    /// with [`MacosDedicatedIdentityBackend::new`] and differs afterwards
-    /// in exactly three ways: it reports a development backend identity, it
-    /// starts the separately named development helper on first preflight,
-    /// and it claims only the controls that helper's live canaries proved
-    /// inside the reserved development identity generation.
-    ///
-    /// It can never become the production path, and after ADR-0012 the
-    /// reason is host authority rather than signing. The helper publishes a
-    /// `MacosDevelopmentHelperSession`, a different type whose validator
-    /// requires `dedicated_account_pool == false`, and the terminal
-    /// evidence chain requires a `MacosAssignedIdentity` naming a real
-    /// local execution account that only root can create. No unprivileged
-    /// artifact can therefore be read as Gate-1 evidence.
+    /// Composes the development backend with the production authority checks.
+    /// It starts a separate development helper and reports only controls measured
+    /// inside its reserved generation. Its session requires
+    /// `dedicated_account_pool == false` and cannot supply the local execution
+    /// account required by production terminal evidence.
     ///
     /// # Errors
     ///
-    /// Fails for the same authority, private-root, and shadow-root reasons
-    /// as the production constructor.
+    /// Fails for the same authority, private-root and shadow-root reasons as the
+    /// production constructor.
     pub(crate) fn development(
         grant: IssuedWorkspaceGrant,
         policy: CompiledExecutionPolicy,
@@ -1472,8 +1442,8 @@ impl MacosDevelopmentCanarySuite<'_> {
     /// admissible proofs.
     ///
     /// `DescendantLimit` is claimed when the helper installed a per-UID
-    /// `RLIMIT_NPROC` equal to the request — which needs an otherwise-unused
-    /// execution account — **or** when the profile itself refuses process
+    /// `RLIMIT_NPROC` equal to the request, which needs an otherwise-unused
+    /// execution account, **or** when the profile itself refuses process
     /// creation *and* the compiled policy configures a ceiling of exactly
     /// one. The second proof is not an approximation of the first: a kernel
     /// that refuses `fork` and `posix_spawn` outright bounds the domain at

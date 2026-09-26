@@ -1,32 +1,19 @@
-//! Durable planning, task execution, integration, task closure, final
-//! verification, and application coordination.
+//! Durable planning, execution, integration, verification and apply coordination.
 //!
-//! This coordinator advances one task through ledger-computed `TaskDone` and
-//! repository-wide final verification. An explicit continuation
-//! may then classify a no-op or admit one trusted-Applier application through
-//! its injected lifecycle, capture the resulting live workspace state through
-//! a dedicated read-only verifier, and durably clean that verifier. It stops
-//! before rollback execution or completion.
-//! Every provider and runner effect is
-//! committed to [`EventLedger`] before invocation. A returned result receives
-//! exact terminal evidence; a crash can leave only the intent, which becomes
-//! reconciliation-only after restart and is never replayed.
+//! Every provider and runner effect is committed to [`EventLedger`] before
+//! invocation. Results receive terminal evidence; incomplete intents become
+//! reconciliation-only after restart and never replay automatically.
 //!
-//! Planning remains task-scoped. Once its exact provider graph is attached,
-//! the one task enters `Ready`, atomically acquires its schema-v15
-//! [`TaskAttempt`], and must cross an injected runner lifecycle into `Running`
-//! before any task provider or runner-owned effect is proposed. Those effects
-//! all repeat the attempt's exact [`WorkerLease`]; the default lifecycle
-//! refuses post-graph work rather than inventing runner authority. The desktop
-//! commits each runner-owned intent and session binding before dispatch and
-//! accepts only one bounded typed response that echoes the complete authority.
+//! After planning attaches the exact provider graph, a task acquires its
+//! [`TaskAttempt`] and must reach `Running` through the runner lifecycle before
+//! proposing effects. Each effect carries the exact [`WorkerLease`], committed
+//! session binding and bounded correlated response.
 //!
-//! Successful file mutations atomically commit their terminal observation,
-//! exact result evidence, post-mutation snapshot, one-operation change set, and
-//! typed effect-artifact link. Core graph-provenance evidence intentionally
-//! omits provider-local assistant and step events, so a final normalized UI
-//! event stream is not reconstructed from planning evidence. This coordinator
-//! alone is not authority for workflow completion or promotion.
+//! File mutations atomically record terminal evidence, the new snapshot, change
+//! set and effect-artifact link. Explicit continuation may classify a no-op or
+//! admit one trusted apply, verify live state and clean up the verifier. This
+//! coordinator alone does not authorize rollback, workflow completion or
+//! promotion, and planning evidence does not reconstruct a complete UI stream.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;

@@ -1,21 +1,9 @@
-//! Process-shared exact-schema template fixtures (D-0002 pilot).
+//! Process-shared schema fixtures, built once per version with the production
+//! migration chain. Callers receive independent copies of immutable templates.
 //!
-//! Nearly every migration test used to rebuild its schema fixture by
-//! replaying the full migration DDL chain from scratch. This module builds
-//! each requested schema version at most ONCE per test process — by exactly
-//! the same construction the per-module `create_exact_vNN_database` helpers
-//! used — then hands every caller a cheap `fs::copy` of the closed template
-//! file.
-//!
-//! Templates live in one process-scoped temporary directory keyed by
-//! process id. The libtest harness offers no reliable process-exit hook, so
-//! that directory is not removed at exit; leaking it (on abort or on normal
-//! exit) is accepted and the operating system's temporary-file cleaner owns
-//! it. Copies, in contrast, are owned by [`TestDatabase`] guards and are
-//! removed on drop exactly like the pre-existing per-test fixtures.
-//!
-//! Templates are immutable once registered: callers only ever receive
-//! copies, and nothing reopens a template path for writing.
+//! Templates use a process-scoped temporary directory. The operating system's
+//! temporary-file cleaner removes that directory; each [`TestDatabase`] guard
+//! removes its own copy on drop.
 
 use std::collections::HashMap;
 use std::fs;
@@ -114,7 +102,7 @@ fn template_path(version: u8) -> PathBuf {
 /// Test-only cached front-end for `validate_schema_matches_migrations_through`.
 ///
 /// The expected inventory for each requested version is built at most once
-/// per test process — by the exact production builder — and reused for every
+/// per test process, by the exact production builder, and reused for every
 /// later call; the comparison itself always runs through the exact production
 /// comparison path, so successes, failures, and error text are identical to
 /// the uncached production validator.

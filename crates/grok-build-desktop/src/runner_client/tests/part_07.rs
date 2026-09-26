@@ -2342,16 +2342,9 @@
         ));
     }
 
-    /// The public production launch is fail-closed on every target, but the
-    /// shape of "fail closed" differs by whether the target has a
-    /// descriptor-exec bridge, and this pins both shapes.
-    ///
-    /// Without a bridge (macOS, ADR-0011) the launch refuses before it inspects
-    /// or persists anything, so no launch intent exists and the owner stays
-    /// idle. With a bridge (Linux) the launch is real: the atomic launch/cleanup
-    /// admission commits *before* the child exists, so a non-runner image
-    /// produces durable launch authority and mandatory cleanup custody rather
-    /// than an idle owner that quietly forgot a process it started.
+    /// Without a descriptor-exec bridge, launch refuses before persistence.
+    /// Linux commits launch and cleanup authority before spawning, so even a
+    /// non-runner image leaves a mandatory cleanup handoff. macOS stays idle.
     #[test]
     fn lifecycle_owner_public_launch_is_fail_closed_on_this_target() {
         let (harness, mut ledger) = TestHarness::new("lifecycle-owner-public-gate");

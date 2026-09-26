@@ -1,37 +1,12 @@
-//! The one directory-entry sync used by every durable writer in this crate.
+//! Directory-entry synchronization for durable rename operations.
 //!
-//! A durable rename is only half-durable until the *directory entry* that names
-//! the renamed file has itself reached stable storage. Every journal, staging,
-//! capture, and apply path in this crate therefore ends in a directory sync.
+//! Linux capability directories use `O_PATH`, which `fsync` rejects with `EBADF`.
+//! Reopen the retained directory with `openat(dir, ".", O_RDONLY | O_DIRECTORY |
+//! O_CLOEXEC)`, then verify its device and inode. The literal relative `"."` keeps
+//! resolution bound to the retained capability rather than an ambient path.
 //!
-//! Those paths used to spell it `directory.try_clone()?.into_std_file()
-//! .sync_all()`, once per module. That idiom is silently broken on Linux
-//! (defect D-0004): `cap-primitives` opens a [`Dir`] with `O_PATH` on Linux and
-//! without it on macOS (`src/rustix/fs/dir_utils.rs`), and `fsync(2)` on an
-//! `O_PATH` descriptor fails with `EBADF`. Every Linux directory sync returned
-//! "Bad file descriptor (os error 9)" while the identical macOS call succeeded,
-//! so the directory-entry half of the crash-safety claim was unproven on Linux.
-//!
-//! The repair may not reopen a path. `linux_cgroup_io` states the rule the whole
-//! crate follows — never reopen an ambient delegation path; every operation is
-//! relative to the retained capability — and re-deriving the handle by name
-//! would trade a durability defect for a traversal-race defect.
-//!
-//! An `O_PATH` descriptor is still a valid `dirfd` for the `*at()` family, so
-//! [`sync_directory_entries`] asks the kernel to reopen the retained descriptor
-//! *through itself*: `openat(dir, ".", O_RDONLY | O_DIRECTORY | O_CLOEXEC)`. The
-//! result is the same filesystem object (same device and inode), reached without
-//! naming a single path component, and it is a fully readable descriptor that
-//! `fsync(2)` accepts.
-//!
-//! The literal `"."` is load-bearing: `openat(2)` ignores `dirfd` when the path
-//! is absolute, so this function takes no name from a caller and hard-codes the
-//! self-reference.
-//!
-//! Both platforms run this one path, and both finish through
-//! [`std::fs::File::sync_all`] rather than a bare `fsync`. That keeps macOS
-//! behaviour bit-for-bit what it already was: the standard library issues
-//! `F_FULLFSYNC` there, which a direct `fsync(2)` would silently downgrade.
+//! Both platforms finish through [`std::fs::File::sync_all`], preserving macOS's
+//! `F_FULLFSYNC` behavior as well as Linux directory-entry durability.
 
 use std::fs::File;
 use std::io;
@@ -96,13 +71,8 @@ mod tests {
         }
     }
 
-    /// D-0004 regression. The crate-wide directory sync must actually reach the
-    /// kernel on a capability directory, on every platform.
-    ///
-    /// Before the fix this failed on Linux with `EBADF`, because
-    /// `cap-primitives` opens `Dir` with `O_PATH` there and `fsync(2)` rejects
-    /// an `O_PATH` descriptor. It succeeded on macOS, where no such flag is
-    /// used, which is why the defect survived every macOS run.
+    /// Directory synchronization must succeed on a retained capability directory,
+    /// including Linux `O_PATH` handles that cannot be passed directly to `fsync`.
     #[test]
     fn a_capability_directory_sync_reaches_the_kernel_without_reopening_a_path() {
         let top = TestDirectory::new("entry-sync");

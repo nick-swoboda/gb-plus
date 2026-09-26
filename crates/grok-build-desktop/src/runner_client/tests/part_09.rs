@@ -3,7 +3,7 @@
 // The user-facing desktop crate cannot mint ValidatedBackendPermit or
 // bypass validate_preflight. It cannot treat SandboxManager /
 // PermissionClassifier as execution authority. Contained worker commands
-// are wire WorkerRunCommand via send_precommitted_task_command — not a
+// are wire WorkerRunCommand via send_precommitted_task_command, not a
 // task-level Command::spawn of the worker program.
 //
 // Runner-process spawn remains allowed as the service boundary:

@@ -67,19 +67,10 @@ const LOWER_HEX: &[u8; 16] = b"0123456789abcdef";
 /// POSIX_SPAWN_CLOEXEC_DEFAULT` from the macOS 15 SDK.
 const REQUIRED_SPAWN_FLAGS: i16 = 0x0080 | 0x0400 | 0x4000;
 
-/// How long a condemned exact direct child is given to become reapable, and how
-/// often the exact-PID poll retries inside that bound (D-0013).
-///
-/// `POSIX_SPAWN_START_SUSPENDED` leaves the new task Mach-suspended, and a
-/// single `SIGKILL` can race that suspension into a state where the kill is
-/// pending but no thread ever runs to take it: the child leaves `T` for `Ss`
-/// and stays alive indefinitely, so a blocking `waitpid` never returns.
-/// Measured on macOS 15.7.5 arm64 at roughly one spawn in fifteen thousand,
-/// reproduced with the same three spawn flags outside this crate entirely, and
-/// absent from two million spawns without `START_SUSPENDED`. Re-sending the
-/// signal releases the task and the pending kill lands, so the reap polls
-/// `NOHANG` inside a bound and re-signals between polls. A child that outlives
-/// the bound is a survivor and is reported as one.
+/// Deadline and polling interval for reaping an exact direct child.
+/// A `POSIX_SPAWN_START_SUSPENDED` child can retain a pending `SIGKILL` without
+/// becoming reapable. Re-signal between `NOHANG` polls and report any child that
+/// survives the deadline instead of blocking indefinitely.
 const CONDEMNED_CHILD_REAP_DEADLINE: Duration = Duration::from_secs(5);
 const CONDEMNED_CHILD_REAP_POLL_INTERVAL: Duration = Duration::from_millis(1);
 
@@ -828,10 +819,8 @@ impl Drop for MacosNativeObservedHeldAtChild {
         if self.cleanup_consumed {
             return;
         }
-        // Defensive process hygiene only. No durable state transition or proof
-        // may rely on this unobservable last-resort attempt. The reap is still
-        // the bounded escalating one: a drop that blocks forever is strictly
-        // worse than a drop that gives up (D-0013).
+        // Best-effort process hygiene only; durable proof cannot rely on Drop.
+        // Reaping remains bounded even when the child survives.
         let _ = kill_process(self.pid, Signal::KILL);
         let _ = reap_exact_condemned_child(self.pid);
         self.cleanup_consumed = true;
@@ -1279,7 +1268,7 @@ pub(crate) fn reap_exact_condemned_child(pid: Pid) -> Result<WaitStatus, String>
 ///
 /// Every wait is `waitpid(exact_pid, WNOHANG)`. A return of `Ok(None)` from
 /// that call independently proves this process still owns that exact unreaped
-/// direct child — a reused or unrelated PID reports `ECHILD` instead — so the
+/// direct child, a reused or unrelated PID reports `ECHILD` instead, so the
 /// PID cannot have been recycled and each escalation signal reaches the same
 /// child the caller condemned and nothing else.
 fn reap_exact_child_within(
@@ -2060,8 +2049,8 @@ mod darwin_spawn {
     ///
     /// After `fork` the child holds a copy of every lock the parent's other
     /// threads were holding, and those threads do not exist to release them.
-    /// The child therefore uses only async-signal-safe primitives — `dup2`,
-    /// `close`, `fchdir`, `setsid`, `raise`, `write`, `execve`, `_exit` — with
+    /// The child therefore uses only async-signal-safe primitives, `dup2`,
+    /// `close`, `fchdir`, `setsid`, `raise`, `write`, `execve`, `_exit`, with
     /// the single deliberate exception of `sandbox_init`, which allocates. That
     /// exception is legal only because the caller has already proved with
     /// `libproc` that this task has exactly one thread, so no other thread can
@@ -2625,7 +2614,7 @@ pub(crate) const fn child_setup_stage(status: i32) -> Option<&'static str> {
 /// target: `sandbox_compile_string`/`sandbox_apply`/`sandbox_free_profile` are
 /// absent from libSystem on macOS 15, so there is no precompiled profile blob
 /// to hand to `posix_spawnattr_setmacpolicyinfo_np`. Delegating to a separate
-/// applier program instead — the `/usr/bin/sandbox-exec` shape — leaves the
+/// applier program instead, the `/usr/bin/sandbox-exec` shape, leaves the
 /// launcher with no observation point at the target's own `execve`, because
 /// the applier runs arbitrary code after the launcher's last look at it.
 /// Forking is therefore required, not preferred.

@@ -15,7 +15,7 @@
     //             no-new-privileges step are identical; only which of two
     //             syscalls the child invokes afterwards moves.
     //
-    // So a control run is not "the same probe with the control switched off" —
+    // So a control run is not "the same probe with the control switched off",
     // there is no such mode in this binary. It is the same enforcement asked a
     // different question, which is what makes the enforced verdict attributable
     // to the kernel rather than to a constant in the report.
@@ -38,7 +38,7 @@
     ///
     /// The identity is read here rather than assumed, because the probe
     /// controller requires the child's own `fstat` of what it opened to equal
-    /// it — which is the clause that makes a path in the artefact a hint and
+    /// it, which is the clause that makes a path in the artefact a hint and
     /// the inode the check.
     #[cfg(target_os = "linux")]
     fn live_landlock_scope(object_id: &str, path: &str, access_bits: u64) -> LinuxLandlockScopeV1 {
@@ -92,7 +92,7 @@
     /// 4 clause: the validator recomputes the probe's result commitment from
     /// the *plan's* artefact, so evidence from a probe over a different ruleset
     /// or a different filter no longer binds. The window is also widened to the
-    /// production one — the fixture names `[6, 10]`, which no kernel this suite
+    /// production one, the fixture names `[6, 10]`, which no kernel this suite
     /// runs on implements, while a production plan commits
     /// `LINUX_LANDLOCK_MINIMUM_KERNEL_ABI`..`LINUX_LANDLOCK_MAXIMUM_MODELED_KERNEL_ABI`.
     #[cfg(target_os = "linux")]
@@ -124,7 +124,7 @@
     fn the_live_landlock_bootstrap_probe_enforces_and_refuses_a_reachable_path() {
         // A real directory that exists on every image this suite runs on, and
         // the filesystem root as the object the ruleset states it does not
-        // grant — which is what a production mint commits.
+        // grant, which is what a production mint commits.
         let ruleset = live_landlock_ruleset("/usr", "/");
 
         let enforced = match probe_landlock_full_enforcement(&ruleset) {
@@ -252,8 +252,8 @@
 
         // The control. One input moves: the child invokes the syscall the same
         // filter allows instead of the one it kills. The filter is installed
-        // either way — the child reports the digest of the program it
-        // assembled — so the survival is a fact about which syscall was called
+        // either way, the child reports the digest of the program it
+        // assembled, so the survival is a fact about which syscall was called
         // and about nothing else.
         let control =
             probe_seccomp_forbidden_syscall(&filter, SECCOMP_BOOTSTRAP_PROBE_PERMITTED_TARGET)

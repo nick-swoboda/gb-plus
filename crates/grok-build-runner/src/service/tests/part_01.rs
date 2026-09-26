@@ -1853,11 +1853,8 @@
         ));
     }
 
-    /// The ADR-0008 property in its sharpest form: once the capture is
-    /// launch-bearing, output may exist, and the refusal path refuses to
-    /// describe it at all. The refusal cannot become a route by which a capture
-    /// that the detection policy would have to classify is instead reported as
-    /// an untouched reservation.
+    /// A capture with a launch record may contain output. Refusal must not
+    /// misreport it as an untouched reservation or bypass output classification.
     #[test]
     fn a_launch_bearing_capture_makes_the_refusal_attach_nothing() {
         let private = StageTestDirectory::new("containment-refusal-launched");
@@ -1949,11 +1946,9 @@
         ));
     }
 
-    /// A refusal whose capture is not the exact untouched reservation the
-    /// request handed over attaches nothing. This is the ADR-0008 property in
-    /// its strongest form: the refusal path cannot describe a capture whose
-    /// output objects may have been written, because it only speaks about a
-    /// capture it re-read as `Acquired` with no launch record.
+    /// Attach refusal evidence only for the exact reservation read back as
+    /// `Acquired` with no launch record. A capture that may contain output cannot
+    /// be described as untouched.
     #[test]
     fn a_refusal_attaches_no_evidence_for_a_capture_it_cannot_read_back_untouched() {
         let (mut client, server) =

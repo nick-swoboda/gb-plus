@@ -100,7 +100,7 @@ fn a_plan_naming_an_absent_artifact_is_refused_before_any_framework_object() {
 /// The entitlement is the gate and it fails closed.
 ///
 /// `cargo` never signs a test binary, so this process carries no
-/// `com.apple.security.virtualization` entitlement — and the only way to
+/// `com.apple.security.virtualization` entitlement, and the only way to
 /// obtain a [`VzGuest`] is through `validated`, which converts the framework's
 /// refusal into one typed error naming the entitlement. There is no
 /// unconfined fallback for the caller to take, and no machine is constructed.
@@ -138,7 +138,7 @@ fn an_unsigned_host_process_is_refused_with_the_exact_entitlement_reason() {
 ///
 /// One flipped byte, one appended byte, and one truncated byte each produce a
 /// distinct typed refusal naming what was observed against what was pinned. The
-/// control is the same artifact unmodified, which verifies — so the refusals
+/// control is the same artifact unmodified, which verifies, so the refusals
 /// are discriminating rather than constant.
 #[test]
 fn a_corrupted_boot_artifact_is_refused_by_the_committed_pin_with_no_fallback() {
@@ -224,7 +224,7 @@ fn is_sha256(text: &str) -> bool {
 /// depends on: the anchor is a full 40-digit uppercase fingerprint, every
 /// digest is a SHA-256, both archives are the pinned architecture at the same
 /// version, and each pool path actually names its own package and
-/// architecture — so a pin edited to point at another package or another
+/// architecture, so a pin edited to point at another package or another
 /// architecture fails here rather than at a download.
 #[test]
 fn the_committed_kernel_source_pin_is_a_complete_canonical_identity() {
@@ -290,8 +290,8 @@ fn the_committed_kernel_source_pin_is_a_complete_canonical_identity() {
 
 /// The acquisition step and the runtime gate pin the same bytes.
 ///
-/// Two levels of pin exist — the archive digest Canonical publishes and the
-/// digest of the extracted kernel the runtime gate enforces — and they live in
+/// Two levels of pin exist, the archive digest Canonical publishes and the
+/// digest of the extracted kernel the runtime gate enforces, and they live in
 /// two files, so drift between them is the obvious way this could rot into a
 /// chain that looks closed and is not. The script is read here and every pinned
 /// value is required to appear in it verbatim.

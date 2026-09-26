@@ -1633,7 +1633,7 @@ const FAKE_REPORT_CONTENT: &[u8] = b"walking skeleton complete\n";
 /// seven: the sprint's own first automated acceptance criterion.
 ///
 /// It is derived from the sprint rather than restated as a literal, because
-/// the two runs *are* that criterion — turn four is its failing baseline and
+/// the two runs *are* that criterion, turn four is its failing baseline and
 /// turn seven is the same check after the requested change. Deriving it also
 /// makes the program a property of the sprint the caller committed, which is
 /// what lets a host name an absolute executable it can prove exists instead of

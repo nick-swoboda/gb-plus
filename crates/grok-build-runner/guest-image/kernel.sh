@@ -24,7 +24,7 @@
 # refused run cannot leave a previously-verified file behind to be mistaken for
 # this run's output.
 #
-# Network is touched **here only** — this is an image-build step run by a
+# Network is touched **here only**, this is an image-build step run by a
 # developer. The shipped application downloads nothing; it is handed the two
 # artifacts by path and verifies them against the constants in
 # `crates/grok-build-runner/src/macos_vz_guest/body/part_02.rs`.
@@ -90,7 +90,7 @@ PIN_MODULE_BYTES=55713
 # is the launcher the Linux command plan names in
 # `LinuxBinaryIdentitiesV1::bubblewrap`, and it is acquired here because this is
 # where the verified chain already is. Nothing about the chain changes to carry
-# it — same anchor fingerprint, same keyring, same archive base, same suite,
+# it, same anchor fingerprint, same keyring, same archive base, same suite,
 # same component, same architecture, same `InRelease` signature, same index.
 # Only a fourth and fifth per-package pin are added.
 #
@@ -145,8 +145,8 @@ corrupt_last_byte() {
     report "probe corrupted one byte of $target"
 }
 
-# Rewrites one character of the *signed text* of InRelease — the recorded
-# digest of the package index — which is the substitution the signature exists
+# Rewrites one character of the *signed text* of InRelease, the recorded
+# digest of the package index, which is the substitution the signature exists
 # to stop. The first attempt at this probe flipped the file's last byte
 # instead, landed after `-----END PGP SIGNATURE-----`, and the enforced run
 # completed: a vacuous probe that the control-versus-enforced discipline
@@ -185,7 +185,7 @@ fetch() {
     # $1 = absolute URL, $2 = destination, $3 = refusal kind for an unreachable
     # or failing transfer. `--fail` so an error page is never mistaken for a
     # payload, `--proto` so a redirect cannot downgrade the scheme set, and
-    # nothing anywhere that disables certificate verification — the in-tree
+    # nothing anywhere that disables certificate verification, the in-tree
     # test greps this file for exactly those flags.
     curl --silent --show-error --fail --location \
          --proto '=http,https' --max-time 600 \
@@ -219,13 +219,13 @@ chmod 700 "$GNUPGHOME"
 #
 # The keyring is fetched from Canonical, but nothing about the fetch is
 # trusted: the single key is exported out of it by fingerprint, and the export
-# is then checked twice — its own fingerprint against the pin, and its bytes
+# is then checked twice, its own fingerprint against the pin, and its bytes
 # against the pinned digest. A substituted keyring fails both.
 
 fetch "$PIN_KEYRING_URL" "$WORK/keyring.gpg" KeyringUnavailable
 
 # The probe's `wrong-key` half exports a *different* key that the same Canonical
-# keyring genuinely contains — the 2012 archive key. Nothing about the transfer
+# keyring genuinely contains, the 2012 archive key. Nothing about the transfer
 # changes; only which key is offered as the anchor, which is the one input the
 # fingerprint pin exists to discriminate.
 EXPORT_FINGERPRINT=$PIN_KEY_FINGERPRINT
@@ -481,11 +481,11 @@ acquire_archive "$PIN_BWRAP_PACKAGE" "$PIN_BWRAP_DEB_PATH" \
 # wild and both are handled explicitly rather than by trying decompressors
 # until one works:
 #
-#   * a plain gzip stream whose expansion is the `Image` — what Ubuntu's
+#   * a plain gzip stream whose expansion is the `Image`, what Ubuntu's
 #     arm64 6.8 kernels are, measured, not assumed; and
 #   * an EFI zboot container: a PE/COFF stub with `zimg` at offset 12, the
 #     payload offset and length as little-endian u32s at 16 and 20, and the
-#     compressor named in 32 bytes at offset 32 — what newer arm64 kernels
+#     compressor named in 32 bytes at offset 32, what newer arm64 kernels
 #     ship, handled here so a future version bump is a measurement rather than
 #     a redesign.
 #
@@ -589,7 +589,7 @@ report "module virtiofs.ko sha256=$OBSERVED_MODULE_SHA bytes=$OBSERVED_MODULE_BY
 #
 # The version is read rather than probed **on purpose**. `bwrap --version`
 # would be an execution of a freshly downloaded binary on the build host, and
-# its answer would be outside the chain — nothing would tie it to the archive
+# its answer would be outside the chain, nothing would tie it to the archive
 # Canonical signed. The control member is inside the `.deb` whose digest the
 # signed index vouched for, so reading it keeps the version at the same level of
 # trust as the bytes. It is also the *package* version, which identifies the

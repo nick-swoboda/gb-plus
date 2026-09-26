@@ -1,31 +1,12 @@
-//! Development-only delegated cgroup-v2 canary domain for the Linux backend.
+//! Development cgroup-v2 canaries. These measurements grant no production
+//! execution or cleanup authority.
 //!
-//! This module is the Linux counterpart of `macos_dev_helper` and grants no
-//! production authority. It reserves one leaf beneath an already-delegated cgroup-v2
-//! root, runs canary processes inside that leaf, and reports exactly what the
-//! kernel said.  It performs no Bubblewrap work and makes no claim about it.
-//!
-//! A Landlock ruleset confines the target to exactly the compiled read and
-//! write scopes plus the read-only runtime surfaces its loader needs, a
-//! seccomp-BPF filter denies every network endpoint when the compiled mode
-//! denies network access, and a second seccomp-BPF filter denies every
-//! namespace route. All three are built here, before the fork, and applied
-//! by the forked child immediately before its `execve`, so they survive
-//! into the target and the target cannot decline them.
-//!
-//! The canary target is the runner's own image, copied into a sealed
-//! `MFD_EXEC` memfd and executed through `/proc/self/fd/<n>`: a memfd has no
-//! pathname at all, so a successful exec cannot have come from a name.  The
-//! child receives exactly three descriptors — the retained working-directory
-//! descriptor as fd 0, the report pipe as fd 1, and the leaf's `cgroup.procs`
-//! as fd 2 — and self-attaches by writing the exact literal `0\n` to fd 2,
-//! which is the same self-attachment the held launcher uses.  The controller
-//! never writes a numeric PID.
-//!
-//! Nothing here can mint a `ValidatedCommandDomainCleanupProof`: that requires
-//! the service-owned durable journal record whose production mint does not
-//! exist.  The domain therefore proves controls; it does not authorize a
-//! contained launch.
+//! Landlock read/write scopes and seccomp network/namespace filters are built
+//! before fork and applied immediately before exec. The target is a sealed
+//! `MFD_EXEC` copy of the runner, executed through `/proc/self/fd/<n>`.
+//! It receives retained cwd at fd 0, a report pipe at fd 1 and `cgroup.procs`
+//! at fd 2, then self-attaches by writing `0\n`; the controller never writes
+//! a numeric PID. No Bubblewrap isolation is claimed here.
 
 // The canary domain is instantiated only on Linux; the helper entry point is
 // recognized on every target so a non-Linux build fails closed rather than
@@ -583,8 +564,8 @@ mod native {
         pub(crate) kill_after_reports: Option<usize>,
         /// The path and syscall layers applied after fork and before exec.
         ///
-        /// `None` is an explicitly unconfined run — the control half of an
-        /// A/B pair — and never a default.
+        /// `None` is an explicitly unconfined run, the control half of an
+        /// A/B pair, and never a default.
         pub(crate) containment: Option<&'a LinuxContainmentPolicy>,
     }
 
@@ -750,41 +731,15 @@ mod native {
             Ok(domain)
         }
 
-        /// Adopts one leaf a probe journal created, owns and will remove.
-        ///
-        /// This is the production entry point, and it is deliberately the
-        /// opposite of [`Self::reserve`] in every ownership respect. The
-        /// journal names the leaf, the journal creates it under its own
-        /// durable create-intent generation, and the journal removes it under
-        /// its own remove-intent generation. Nothing here mints a name,
-        /// `mkdirat` is never called, and [`Self::release`] never unlinks, so
-        /// adopting cannot create a cgroup domain that no journal generation
-        /// describes.
-        ///
-        /// `identity` is the journal's own authoritative `(device, inode)`
-        /// observation of that leaf. The adoption re-reads the kernel's
-        /// identity through the opened descriptor and refuses unless it is
-        /// exactly that pair, so a suite cannot be pointed at a leaf the
-        /// journal never observed, and a leaf substituted between the
-        /// journal's observation and this open is refused rather than used.
-        ///
-        /// The delegation arrives as a descriptor rather than a path because
-        /// the caller already holds the authenticated one; re-resolving a name
-        /// here would reintroduce exactly the ambiguity the descriptor exists
-        /// to remove.
-        ///
-        /// Every ceiling this domain manages is written to a definite value,
-        /// including the unlimited case, because one adopted leaf carries a
-        /// whole suite and a ceiling left over from an earlier run would
-        /// silently become the next run's control half.
+        /// Adopts a journal-owned cgroup leaf without creating or removing it.
+        /// The held delegation avoids path re-resolution; the opened leaf must match
+        /// the journal's device and inode. Set every resource ceiling, including
+        /// unlimited values, so prior canaries cannot affect later runs.
         ///
         /// # Errors
         ///
-        /// Fails when the delegation descriptor cannot be cloned or is not a
-        /// cgroup-v2 directory, when the named leaf cannot be opened, when the
-        /// kernel's identity for it differs from the journal's, and when a
-        /// requested controller file is absent because the delegation's parent
-        /// did not enable that controller.
+        /// Fails if the delegation cannot be cloned or is not cgroup v2, the leaf
+        /// cannot be opened, its identity changed, or a required controller is absent.
         pub(crate) fn adopt(
             delegation: std::os::fd::BorrowedFd<'_>,
             leaf_name: &str,
@@ -1092,8 +1047,8 @@ mod native {
                 LinuxDevDomainError::new("open-canary-cgroup-procs", error.to_string())
             })?;
             // Both layers are built here, in the controller, before the fork:
-            // everything that allocates — the ruleset, its rules, the
-            // compiled BPF program — happens on this side of it.
+            // everything that allocates, the ruleset, its rules, the
+            // compiled BPF program, happens on this side of it.
             let (containment, containment_evidence) = match specification.containment {
                 Some(policy) => {
                     let (containment, evidence) = build_child_containment(policy)?;
@@ -1489,7 +1444,7 @@ mod native {
     /// would be exactly the dishonesty this backend exists to avoid.
     pub(crate) const REQUIRED_LANDLOCK_ABI: ABI = ABI::V4;
 
-    /// `EPERM` — the errno the syscall layer returns for a network endpoint.
+    /// `EPERM`, the errno the syscall layer returns for a network endpoint.
     ///
     /// It is deliberately *not* the `EACCES` Landlock produces for a denied
     /// path, so the errno a canary reports names which layer refused it.
@@ -1500,7 +1455,7 @@ mod native {
     ///
     /// The kernel resolves the ELF interpreter and the complete shared-object
     /// closure of the target image *after* Landlock is applied, so a policy
-    /// that omits them does not confine the target — it prevents it from
+    /// that omits them does not confine the target, it prevents it from
     /// starting, and a program that never started proves nothing. `/proc` is
     /// here for the mirror-image reason: the contained program's own
     /// self-observation and the `/proc/self/fd/<n>` name through which a
@@ -1523,7 +1478,7 @@ mod native {
     ///
     /// `/dev/null` is not a convenience. `Stdio::null()`, every shell
     /// redirection, and most toolchains open it, and a path policy that omits
-    /// it does not confine a workload — it stops one, and a program that
+    /// it does not confine a workload, it stops one, and a program that
     /// never ran proves nothing. It is named exactly: no directory under
     /// `/dev` is granted, so no other device is reachable through it.
     const LINUX_RUNTIME_WRITE_SURFACES: &[&str] = &["/dev/null"];
@@ -1603,7 +1558,7 @@ mod native {
         ("io_uring_setup", 425),
     ];
 
-    /// `ENOSYS` — the errno the namespace layer returns.
+    /// `ENOSYS`, the errno the namespace layer returns.
     ///
     /// This denies `clone3` without breaking
     /// ordinary work. glibc since 2.34 issues `clone3` from `pthread_create`

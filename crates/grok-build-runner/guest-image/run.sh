@@ -27,7 +27,7 @@
 #   * **Residue freedom between commands.** A persistent guest amortises the
 #     boot but keeps state between commands. Each command runs in its own mount
 #     namespace with its own private /tmp, under its own cgroup leaf, in its own
-#     private scratch root, with a replaced environment — and the leaf is killed
+#     private scratch root, with a replaced environment, and the leaf is killed
 #     and proved empty before the next command is served.
 
 set -u
@@ -103,7 +103,7 @@ log "ready, staged in ${STAGE_MS}ms"
 # health check. If it stops advancing for HOST_STALL_LIMIT idle turns (1,000 turns of ~10 ms, so about 10 s) the host
 # is gone, and a guest whose owner is gone powers itself off rather than running
 # unattended: a host killed mid-session must not leave a machine behind. The
-# check is between commands, so a command already running finishes first — the
+# check is between commands, so a command already running finishes first, the
 # host's own wall-clock budget is the outer bound on that.
 TURN=0
 HOST_SEEN=""
@@ -170,7 +170,7 @@ while :; do
     # cgroup v2 forbids a cgroup from holding processes and enabled subtree
     # controllers at once, so the command's own process lives one level down.
     # Without this the command would run in the supervisor's cgroup and the
-    # kill below would empty a domain the command was never in — measured: a
+    # kill below would empty a domain the command was never in, measured: a
     # detached `setsid sleep` planted by one command survived into the next.
     mkdir -p "$LEAF/self"
     chown -R 1000:1000 "$LEAF"

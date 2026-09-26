@@ -71,28 +71,10 @@ fn honest_production_reading(
     }
 }
 
-/// The unprivileged/production boundary, as an executable assertion.
-///
-/// ADR-0012 deliberately inverted the first clause of this test. Local
-/// attestation is now the runtime predicate, so the honest production reading
-/// of a locally attested session **is** admitted at the session level — that is
-/// the whole point of the decision, and asserting the opposite would be
-/// asserting the bug. What the test must still prove is that nothing has become
-/// forgeable, and it proves five things:
-///
-/// 1. an unattested helper is refused on the exact `session.attestation` field,
-///    by the production and unprivileged validators alike;
-/// 2. an install path an untrusted writer could reach is refused on its exact
-///    field, so "locally attested" cannot degrade to "locally present";
-/// 3. the unprivileged contract refuses the dishonest repair — claiming
-///    `dedicated_account_pool` makes the session fail
-///    `MacosDevelopmentHelperSession::validate`, so there is no value that
-///    satisfies both contracts;
-/// 4. the canonical bytes of an unprivileged session cannot decode as a
-///    production session at all, because the leading topology tag defeats
-///    `deny_unknown_fields`; and
-/// 5. the reverse also holds, so a production session frame cannot be replayed
-///    into the unprivileged path.
+/// Local attestation is valid for both session types. Both reject unattested
+/// helpers and unsafe install paths. The development validator rejects a
+/// dedicated-account claim, and the topology tag prevents canonical frames
+/// from decoding as the other session type.
 #[test]
 fn an_unattested_or_ill_installed_helper_is_refused_and_the_topologies_stay_disjoint() {
     let session = development_session();
@@ -381,7 +363,7 @@ fn the_development_manifest_admits_only_absolute_compiled_executables() {
 /// The whole safety argument for calling `sandbox_init` after `fork` is that
 /// the launching task had exactly one thread. Evidence that claims
 /// `InProcessFork` while reporting more is refused by the validator, so a
-/// reader never has to take the precondition on trust — and a future change
+/// reader never has to take the precondition on trust, and a future change
 /// that forgot to measure it could not publish a passing artifact.
 #[test]
 fn in_process_profile_application_evidence_requires_a_single_threaded_launcher() {

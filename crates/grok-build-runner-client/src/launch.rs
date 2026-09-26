@@ -3,38 +3,20 @@
 use super::*;
 
 impl RunnerLifecycleClient {
-    /// Authenticates, durably records, prepares, releases, initializes, and
-    /// registers one runner session when a target service is admitted.
+    /// Authenticates, records, launches and initializes one runner session.
     ///
-    /// The named binary is inspected through one `CLOEXEC` file description
-    /// before the launch intent is committed. Linux copies those authenticated
-    /// bytes into an executable memfd, applies and reads back the complete
-    /// immutable seal set, and executes only that sealed image through its
-    /// authenticated `/proc/self/fd/N` magic link. Targets without an audited
-    /// descriptor bridge fail before inspection or persistence: macOS refuses
-    /// here for the reason ADR-0011 measured.
-    ///
-    /// Where the bridge exists the runner is started as a direct child of this
-    /// desktop process — the same pattern
-    /// [`Self::launch_post_completion_rollback`] already uses — and every
-    /// ordinary authority still applies in order: exact durable `SprintSpec` and
-    /// role-input authority, the atomic schema-v13 launch/cleanup admission
-    /// with its canonical platform launch binding, the sequence-zero
-    /// initialization exchange and receipt, nonce freshness, durable session
-    /// registration, and the `Leased -> Running` task-attempt boundary. A
-    /// direct child creates no native accounting domain, so it holds no native
-    /// cleanup custody and proves no containment; command execution stays
-    /// fail-closed inside the runner until a containment backend passes its
-    /// probes.
+    /// Linux hashes the retained binary, seals a memfd copy and executes that image.
+    /// Targets without an admitted descriptor-exec bridge refuse before persistence.
+    /// Launch requires durable role authority, atomic launch/cleanup admission,
+    /// initialization evidence, a fresh nonce and session registration before the
+    /// `Leased -> Running` boundary. A direct child proves no command containment;
+    /// that requires the runner's separate backend checks.
     ///
     /// # Errors
     ///
-    /// Returns a launch failure for invalid authority, identity drift, durable
-    /// persistence failure, spawn/pipe failure, initialization refusal,
-    /// malformed/uncorrelated evidence, nonce replay, or session-registration
-    /// failure. Failures after the durable launch boundary is entered carry a
-    /// mandatory cleanup handoff, even if descriptor revalidation prevents an
-    /// operating-system spawn.
+    /// Returns a failure for invalid authority, identity drift, persistence, spawn,
+    /// initialization, evidence or registration errors. Failures after durable
+    /// launch admission carry a mandatory cleanup handoff, even if no child starts.
     #[allow(
         clippy::needless_pass_by_value,
         clippy::too_many_lines,

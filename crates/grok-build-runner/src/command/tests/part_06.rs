@@ -1,9 +1,6 @@
-// Slice 2.1 — workspace isolation + permit-authority fence.
-//
-// Option B: this tree does not absorb 1.05's crate graph, and 1.05's
-// sandbox-apply / permission-classifier paths cannot mint execution
-// authority beside `validate_preflight`. These tests fail the suite if
-// either invariant moves.
+// Workspace isolation and permit-authority boundaries.
+// Upstream sandbox and permission-classifier paths cannot bypass
+// `validate_preflight` to authorize execution.
 
 fn workspace_root() -> PathBuf {
     let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

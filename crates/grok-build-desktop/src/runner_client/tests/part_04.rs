@@ -1301,20 +1301,10 @@
         }
     }
 
-    /// D-0012 regression. The coordinator scopes every worker tool effect's
-    /// durable idempotency key to the attempt's lease
-    /// (`task-attempt-<sha256(lease_id)>-<provider key>`) because a provider
-    /// re-emits the same raw call key on every attempt of the same task, and
-    /// ADR-0004 requires each side-effecting action to receive a globally
-    /// unique key and forbids the original intent from becoming replay
-    /// authority for a retry. The runner client used to compare the provider's
-    /// **raw** key against `intent.idempotency_key`, so the two validators of
-    /// one relation disagreed and every worker tool effect was refused.
-    ///
-    /// Both validators are exercised over the same pair here: disagreement is
-    /// the defect, so agreement is what has to be pinned. The expected key is
-    /// spelled out literally rather than re-derived, so a silent change to the
-    /// shared derivation cannot make this test vacuously pass.
+    /// The coordinator and runner must agree on lease-scoped idempotency keys.
+    /// A provider may reuse a raw call key on a new attempt, but that attempt
+    /// must never reuse the earlier effect's authority. A literal expected key
+    /// also detects unintended changes to the shared derivation.
     #[test]
     fn worker_tool_call_idempotency_key_is_lease_scoped_for_both_validators() {
         use crate::durable_coordinator::validate_provider_call_for_effect;

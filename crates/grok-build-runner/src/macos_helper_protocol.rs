@@ -351,25 +351,15 @@ impl MacosHelperInstallAudit {
     }
 }
 
-/// What was actually verified about the helper's code identity at admission.
+/// Code identity verified at helper admission.
 ///
-/// This type replaces the former `production_signed: bool`, which asserted
-/// Apple publisher attestation and was therefore unobtainable for a
-/// build-from-source installation. ADR-0012 separates the two properties and
-/// makes the achievable one the runtime contract:
+/// * [`Self::LocalCodeIdentity`]: an install-time `cdhash` requirement and a
+///   successful [`MacosHelperInstallAudit::validate`] check.
+/// * [`Self::PublisherCodeIdentity`]: local identity plus an Apple-anchored chain.
+/// * [`Self::Unattested`]: no admissible identity.
 ///
-/// * [`Self::LocalCodeIdentity`] — the loaded helper image satisfies a
-///   `cdhash` requirement pinned at install time, and its install path passed
-///   [`MacosHelperInstallAudit::validate`]. This is what the containment threat
-///   model needs at runtime.
-/// * [`Self::PublisherCodeIdentity`] — everything the local kind proves, plus
-///   an Apple-anchored certificate chain. A distribution property, recorded
-///   when present and never required.
-/// * [`Self::Unattested`] — nothing was established. Never admissible.
-///
-/// Both attested kinds are first-class at runtime. The distinction is retained
-/// in the session, and therefore in every durable artifact derived from it, so
-/// a reader always knows which property a proof rests on.
+/// Both attested kinds permit runtime admission. Durable records preserve which
+/// kind was verified.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case", tag = "kind")]
 pub(crate) enum MacosHelperAttestation {
@@ -449,19 +439,13 @@ pub(crate) struct MacosHelperSession {
 }
 
 impl MacosHelperSession {
-    /// Applies the runtime admission predicate fixed by ADR-0012.
-    ///
-    /// The predicate is local code identity, not publisher attestation: a
-    /// helper built from source, ad-hoc signed, pinned by its code-directory
-    /// hash and installed where untrusted principals cannot write it is a
-    /// first-class production peer. A Developer-ID helper is admitted by the
-    /// same clauses and merely records a stronger provenance.
+    /// Validates local code identity and an install path protected from untrusted
+    /// writers. Publisher attestation is optional and records additional provenance.
     ///
     /// # Errors
     ///
-    /// Fails for an unsupported protocol version, a zero policy version or
-    /// authentication time, an unsatisfied peer requirement, an unattested
-    /// helper, or an install path that does not exclude untrusted writers.
+    /// Fails for invalid versions or timestamps, an unsatisfied peer requirement,
+    /// an unattested helper or an unsafe install path.
     pub(crate) fn validate(&self) -> Result<(), MacosHelperProtocolError> {
         if self.protocol_version != MACOS_HELPER_PROTOCOL_VERSION {
             return Err(invalid(
@@ -2146,11 +2130,8 @@ mod tests {
         assert!(request().validate_for_session(&session, 20).is_err());
     }
 
-    /// The ADR-0012 runtime admission predicate, as an executable matrix.
-    ///
-    /// Local and publisher attestation are both admitted; the difference is
-    /// recorded, never gating. An unattested helper and every install path that
-    /// admits an untrusted writer are refused on their exact field.
+    /// Both local and publisher attestation permit admission. Unattested helpers
+    /// and install paths writable by untrusted users fail on their exact fields.
     #[test]
     fn local_and_publisher_attestation_are_both_admitted_and_unattested_is_not() {
         let mut session = session();

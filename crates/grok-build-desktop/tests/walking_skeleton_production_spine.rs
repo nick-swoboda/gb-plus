@@ -1,52 +1,16 @@
-//! One end-to-end drive of the *production* walking-skeleton spine.
+//! End-to-end coverage through the production coordinator, ledger, workspace
+//! grants, runner client and runner executable, driven by [`FakeProvider`].
 //!
-//! Every component in this test is the production surface: the real
-//! [`FakeProvider`] adapter, the real [`WorkspaceGrantIssuer`] trust boundary,
-//! the real [`WorkspaceManifest`]/[`ShadowWorkspace`] capability pipeline, the
-//! real [`ExecutionPolicyCompiler`], the real [`EventLedger`], the real
-//! `grok-build-runner` executable, and — crucially — the real
-//! [`DesktopRunnerLifecycleOwner`]. No scripted or strict-fake runner lifecycle
-//! is injected, so nothing in the chain can synthesize runner authority that the
-//! product does not actually have.
+//! macOS refuses before launch because this route has no descriptor-exec bridge.
+//! Linux launches the sealed runner, initializes it, creates the worker's private
+//! shadow and records `Leased -> Running`. Three file/search effects succeed.
+//! The command effect reaches the containment backend's service-unavailable
+//! refusal and remains `Unknown` without an admitted command-journal reopener.
+//! The coordinator reports `TaskUnknownCleanupRequired` across restart.
 //!
-//! The test records where that spine truthfully stops on this compile target
-//! and proves the ledger's fail-closed contract at exactly that point,
-//! including across a process-boundary restart. The two stop points differ, and
-//! both are asserted exactly:
-//!
-//! - **macOS** stops before any process exists. The descriptor-exec bridge the
-//!   ordinary launch needs does not exist on the platform, so the launch
-//!   refuses with that measurement as its reason and the attempt stays
-//!   `Leased`.
-//! - **Linux** runs a real worker. The desktop authenticates the runner image,
-//!   seals it into an anonymous executable memfd, commits the atomic schema-v13
-//!   launch/cleanup admission with its canonical platform launch binding,
-//!   executes the sealed image through `/proc/self/fd/N`, completes a real
-//!   sequence-zero initialization exchange, and the worker then captures the
-//!   granted live root and **creates its own private shadow** before the ledger
-//!   records the exact `Leased -> Running` boundary. The coordinator's timestamp
-//!   cursor then resynchronizes with that wall-clock boundary (D-0011), so the
-//!   schema-v15 task-attempt phase fence admits the first Running-phase provider
-//!   turn instead of refusing it. Four such turns complete, and since D-0012 the
-//!   production runner client re-derives the lease-scoped tool key the
-//!   coordinator minted instead of comparing the provider's raw call key, so the
-//!   three file/search tools those turns authorize are claimed, dispatched over
-//!   the real wire, and terminalized `Succeeded`. The run stops at the fourth
-//!   tool, an ordinary `RunCommand` whose transport ends `Unknown`: closing it
-//!   needs a native command-journal reopener this target has no admitted native
-//!   service for, so the coordinator returns `TaskUnknownCleanupRequired`.
-//!   That fourth tool commands the sprint's own automated acceptance criterion,
-//!   which this test compiles as a **static** ELF and commits by **absolute**
-//!   path, so the contained boundary authenticates a real executable identity
-//!   and reaches the backend's own service-unavailable refusal rather than
-//!   refusing a bare name for want of a controlled `PATH`. The exact typed
-//!   failure that produces is pinned by
-//!   [`expected_command_unknown_evidence_digest`].
-//!
-//! Shadow ownership is settled here rather than left open (D-0007): the runner
-//! wire protocol gives the `Worker` role shadow creation, so the desktop names
-//! the fixed shadow root through
-//! [`ShadowWorkspace::worker_created_destination`] and creates nothing.
+//! The command fixture is a static ELF at an absolute path, so executable
+//! admission succeeds before the backend refuses. The worker owns shadow
+//! creation; the desktop only names its destination.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -193,15 +157,15 @@ fn baseline_command_source() -> PathBuf {
 /// path that happens to exist, for two reasons the contained boundary makes
 /// concrete:
 ///
-/// - `prepare_v12` refuses a bare program name outright — "a bare executable
-///   name requires an explicit controlled PATH" — and then *authenticates* the
+/// - `prepare_v12` refuses a bare program name outright, "a bare executable
+///   name requires an explicit controlled PATH", and then *authenticates* the
 ///   absolute one it is given, stating, opening and hashing the file. So the
 ///   program must be absolute and must really exist where the runner runs.
 /// - On Linux it is linked with `-C target-feature=+crt-static`, and the ELF is
 ///   then read back here to prove it carries no `PT_INTERP` and no
 ///   `PT_DYNAMIC`. That is the property that keeps a target's linkage on
 ///   `LinuxTargetLinkageV1::StaticElf`, whose `validate_mounts` arm requires
-///   zero interpreter and runtime-object mounts — i.e. it is what keeps the
+///   zero interpreter and runtime-object mounts, i.e. it is what keeps the
 ///   deferred loader-closure item deferred rather than forcing it.
 ///
 /// macOS cannot statically link libSystem and never reaches this command at
@@ -285,8 +249,8 @@ fn assert_static_elf(binary: &Path) {
     );
 }
 
-/// The sprint's automated acceptance criterion, and therefore — since the
-/// deterministic provider derives its two command turns from that criterion —
+/// The sprint's automated acceptance criterion, and therefore, since the
+/// deterministic provider derives its two command turns from that criterion,
 /// exactly what the walking skeleton's fourth tool commands.
 fn locked_acceptance_command(program: &Path) -> CommandSpec {
     assert!(
@@ -442,8 +406,8 @@ fn assert_fail_closed_custody(sprint: &PersistedSprint, ledger: &EventLedger) {
 
 /// Asserts the custody shape after a real worker process launched, initialized,
 /// created its own private shadow, carried the attempt into `Running`, and then
-/// completed four Running-phase provider turns — three of which dispatched a
-/// real runner file or search effect to a successful terminal — before the
+/// completed four Running-phase provider turns, three of which dispatched a
+/// real runner file or search effect to a successful terminal, before the
 /// fourth turn's ordinary command ended `Unknown`. Returns the exact active
 /// attempt identity for projection assertions.
 #[cfg(target_os = "linux")]
@@ -502,12 +466,8 @@ fn assert_running_worker_custody(sprint: &PersistedSprint, ledger: &EventLedger)
         "the attempt must stay open rather than acquire an invented disposition"
     );
 
-    // D-0011, proven on the production spine rather than only in a fixture: the
-    // boundary is a real wall-clock instant minted after a real spawn and wire
-    // handshake, and the coordinator's cursor resynchronized with it, so every
-    // phase-fenced effect the attempt owns is stamped strictly after it. Before
-    // the fix the very next intent carried ~2_006 against a boundary of
-    // ~1_785_500_886_793 and the schema-v15 phase fence refused it.
+    // Every phase-fenced effect must follow the running boundary recorded after
+    // the real spawn and initialization handshake.
     let session = ledger
         .load_runner_session(&sprint.spec.sprint_id, &running.runner_session_id)
         .expect("load the durable session registration");
@@ -562,13 +522,8 @@ fn assert_running_worker_custody(sprint: &PersistedSprint, ledger: &EventLedger)
         );
     }
 
-    // D-0012, proven on the production spine rather than only in a unit fixture:
-    // the coordinator scopes every worker tool effect's idempotency key to the
-    // attempt's lease, and the production runner client now re-derives that same
-    // relation instead of comparing the provider's raw call key — so each tool
-    // the FakeProvider asks for is admitted, claimed, and dispatched to the real
-    // runner. Before the fix the very first one was refused with
-    // `fake-v1-01-read-agents` against `task-attempt-<digest>-fake-v1-01-read-agents`.
+    // The runner client must accept the coordinator's lease-scoped tool keys
+    // and dispatch the authorized file/search effects over the runner wire.
     let lease_digest =
         grok_build_core::Digest::sha256(active.attempt.worker_lease.lease_id.as_bytes());
     let tool_table = [
@@ -659,8 +614,8 @@ fn assert_running_worker_custody(sprint: &PersistedSprint, ledger: &EventLedger)
 /// The exact evidence digest an `Unknown` task command must carry, and with it
 /// the exact typed failure the runner answered with.
 ///
-/// The reason string itself is not stored — only `sha256` of the evidence
-/// record built from it — which makes this assertion an equality against a
+/// The reason string itself is not stored, only `sha256` of the evidence
+/// record built from it, which makes this assertion an equality against a
 /// string this test states in full rather than a substring match on something
 /// the product happened to write. Both halves are the product's own formats:
 /// `task_effect_unknown_evidence` for the record and
@@ -669,7 +624,7 @@ fn assert_running_worker_custody(sprint: &PersistedSprint, ledger: &EventLedger)
 /// This is where the increment is visible. While the fourth tool commanded a
 /// bare `cargo`, `prepare_v12` refused with "a bare executable name requires an
 /// explicit controlled PATH", which `contained_command_failure_code` maps to
-/// `InvalidAuthority` — one gate short of any containment backend. With an
+/// `InvalidAuthority`, one gate short of any containment backend. With an
 /// absolute static executable the boundary composes the backend and stops at
 /// the backend's own service-unavailable refusal, which maps to
 /// `ContainmentUnavailable`. Substituting `InvalidAuthority` below fails this
@@ -688,7 +643,7 @@ fn expected_command_unknown_evidence_digest() -> grok_build_core::Digest {
 
 /// The worker owns shadow creation, so a run that reached `WorkerCreateShadow`
 /// must leave a real private directory holding exactly the fixture bytes the
-/// worker captured from the live root — no more, no less, and nothing mutated.
+/// worker captured from the live root, no more, no less, and nothing mutated.
 #[cfg(target_os = "linux")]
 fn assert_worker_created_shadow(shadow_root: &Path) {
     let metadata = fs::symlink_metadata(shadow_root)
@@ -934,8 +889,8 @@ fn walking_skeleton_production_spine_stops_at_the_absent_descriptor_exec_bridge(
         "the refusal must name the exact unavailable native launch binding and its measured cause"
     );
 
-    // Nothing was written anywhere a change could hide, and — because no worker
-    // process ever existed — the worker-owned private shadow was never created.
+    // Nothing was written anywhere a change could hide, and, because no worker
+    // process ever existed, the worker-owned private shadow was never created.
     assert_unchanged_fixture_tree(&fixture.workspace, "the live trusted root");
     assert_worker_shadow_absent(fixture.shadow.root());
 
@@ -986,47 +941,11 @@ fn walking_skeleton_production_spine_stops_at_the_absent_descriptor_exec_bridge(
     );
 }
 
-/// Linux: a real sandbox-runner child is launched, speaks the wire protocol,
-/// **creates its own private shadow**, and carries the task attempt into
-/// `Running`. The spine stops two whole layers deeper than it used to.
-///
-/// What is now proven that was not before D-0007: the desktop names — and does
-/// not create — the fixed shadow root, the runner accepts initialization, the
-/// worker's own descriptor-relative live capture equals the initialized base
-/// snapshot, `WorkerCreateShadow` materializes the private shadow from that
-/// capture, the session registers, and the ledger records the exact
-/// `Leased -> Running` boundary. Before this change the runner refused
-/// initialization outright with "fixed shadow destination must not already
-/// exist", so no worker ever reached `Running`.
-///
-/// Since D-0011 it goes one layer further still. The coordinator's monotone
-/// `TimestampCursor` now resynchronizes with the wall-clock instant the
-/// production lifecycle stamps into the `Running` boundary, so the schema-v15
-/// `effect_intents_task_attempt_phase_fence` admits the first Running-phase
-/// `ProviderRequest` instead of refusing it for predating its own boundary.
-///
-/// Since D-0012 the worker tool effects actually run. The coordinator scopes
-/// every worker tool effect's idempotency key to the attempt's lease —
-/// `task-attempt-<sha256(lease_id)>-<provider key>`
-/// (`task_lease_provider_call_effect_key`) — and the production runner client's
-/// `validate_worker_provider_call_context` now re-derives that same relation
-/// through the one shared derivation instead of comparing the provider's raw
-/// call key. Four Running-phase provider turns therefore complete, and the
-/// first three tools they authorize — read `AGENTS.md`, read `src/lib.rs`,
-/// search `TODO` — are claimed, dispatched to the real runner over the wire,
-/// and terminalized `Succeeded`.
-///
-/// What stops it now is the ordinary command. Turn four authorizes the sprint's
-/// own automated acceptance criterion — an absolute path to the static baseline
-/// executable this test compiles — so `prepare_v12` authenticates a real
-/// executable identity, composes this host's contained backend and stops at
-/// that backend's own service-unavailable refusal. That effect is claimed and
-/// terminalizes `Unknown`, and closing an `Unknown` task command needs a native
-/// command-journal reopener that no admitted native service supplies on this
-/// target. The coordinator therefore returns the typed
-/// `TaskUnknownCleanupRequired` status rather than inventing a terminal — the
-/// same missing native containment custody B-03 and D-0008 already track, now
-/// reached from the command side.
+/// A Linux worker creates its private shadow and reaches `Running`. Three
+/// file/search effects succeed with lease-scoped keys. The absolute static
+/// command fixture then reaches the containment service refusal. Without a
+/// native command-journal reopener, its effect remains `Unknown` and the
+/// coordinator reports `TaskUnknownCleanupRequired`.
 #[cfg(target_os = "linux")]
 #[test]
 #[allow(
@@ -1054,9 +973,8 @@ fn walking_skeleton_production_spine_runs_four_provider_turns_and_stops_at_the_u
     // The live trusted root is still untouched: a worker that only captured and
     // copied has written nothing back.
     assert_unchanged_fixture_tree(&fixture.workspace, "the live trusted root");
-    // And the thing D-0007 is about: the *worker* created its private shadow,
-    // from its own live capture, byte-identical to the checked-in fixture. The
-    // desktop created nothing.
+    // The worker created the shadow from its own capture; the desktop only
+    // named the destination.
     assert_worker_created_shadow(fixture.shadow.root());
 
     let before_restart = coordinator

@@ -1,35 +1,19 @@
-//! Immutable restart observation for one sensitive-output command termination.
+//! Immutable restart observation for sensitive-output command termination.
 //!
-//! This record closes the process-local knowledge gap between native command
-//! termination and the generation-five-through-eight sensitive-output branch
-//! journals. It is a separate, one-per-capture input: it is not generation
-//! nine, does not reinterpret an existing journal head, and grants no launch,
-//! cleanup, publication, retry, verification, or completion authority.
+//! This per-capture record is separate from the branch journal and grants no
+//! execution or continuation authority. Rejection is fieldless and contains no
+//! output metadata. Clean observations retain only admitted stream summaries
+//! and response fields. Neither variant stores wall-clock timestamps.
 //!
-//! The rejection variant is deliberately fieldless. In particular, its
-//! canonical bytes cannot contain output length, output digest, retained
-//! bytes, stream, matcher, elapsed-time, or wall-clock fields. The clean
-//! variant may retain only the clean stream summaries and response fields
-//! already admitted by the eventual command terminal. Its `duration_ms` is an
-//! elapsed response value, not a wall-clock timestamp. No variant contains a
-//! wall-clock timestamp.
+//! Integration requires a known branch and independently validated zero-survivor
+//! proof. Publish canonical bytes once using private temporary storage, file
+//! sync, no-replace rename, directory sync and exact canonical readback.
 //!
-//! # Proposed integration API
-//!
-//! The command supervisor should construct this value immediately after it
-//! knows the closed branch and an independently validated command-domain proof
-//! shows zero survivors. The descriptor-relative output store should publish
-//! [`canonical_bytes`](SensitiveOutputTerminalObservationV1::canonical_bytes)
-//! once under [`SENSITIVE_OUTPUT_TERMINAL_OBSERVATION_FILE_V1`] using a private
-//! temporary file, file sync, no-replace rename, directory sync, exact reopen,
-//! and [`decode_canonical`](SensitiveOutputTerminalObservationV1::decode_canonical).
-//! Restart recovery must then call
+//! Restart recovery must call
 //! [`validate_expected`](SensitiveOutputTerminalObservationV1::validate_expected)
-//! with the current journal-derived branch, core-selected backend and binding,
-//! and a freshly reopened native proof. It must separately perform fresh
-//! descriptor-relative output-custody readback before continuing a branch.
-//! Neither canonical decode nor `validate_expected` represents that custody
-//! check, so neither can authorize continuation by itself.
+//! with the journal-derived branch, selected backend, binding and reopened native
+//! proof. Fresh descriptor-relative output-custody readback is also required;
+//! canonical decoding and this observation do not establish custody.
 
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};

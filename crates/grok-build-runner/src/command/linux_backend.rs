@@ -56,7 +56,7 @@ pub(crate) const LINUX_CGROUP_V2_SERVICE_UNAVAILABLE: &str = "the Linux native c
 ///
 /// This backend does hold a real `LinuxCgroupIo`: a delegated cgroup-v2
 /// subtree, a durably journaled command plan, an admitted launch image, an
-/// authenticated child-launch closure — and now a live canary episode, run
+/// authenticated child-launch closure, and now a live canary episode, run
 /// in a leaf the **probe** journal creates and removes, which is why it no
 /// longer costs the one domain `prepare_service_domain` is scoped to.
 ///
@@ -233,7 +233,7 @@ impl LinuxCgroupV2Backend {
     ) -> Result<Self, SupervisorError> {
         // The join comes first and takes the handoff by reference, so a
         // refusal never destroys the service's custody of a live
-        // delegation — and so the same clause can be exercised against a
+        // delegation, and so the same clause can be exercised against a
         // real crossed authority without spending the handoff.
         require_service_handoff_authority(&grant, &policy, &io)?;
         let mut backend = Self::new(grant, policy, paths)?;
@@ -351,7 +351,7 @@ impl LinuxCgroupV2Backend {
     /// hold a real service handoff, so "empty" no longer follows from the
     /// type. What it follows from is that nothing installs Landlock,
     /// seccomp or the descriptor exec on this generation, and that the
-    /// production arm has no preflight probe suite — the one plan the
+    /// production arm has no preflight probe suite, the one plan the
     /// journal committed describes one domain, and spending it on a probe
     /// would leave the command none.
     ///
@@ -400,8 +400,8 @@ impl LinuxCgroupV2Backend {
 ///
 /// The domain owns the read end and the parent keeps no copy of the write
 /// end, so end-of-file here is the kernel's own statement that every
-/// writer — the leader and every descendant that inherited the
-/// descriptor — is gone. `closed` is therefore an observation and never a
+/// writer, the leader and every descendant that inherited the
+/// descriptor, is gone. `closed` is therefore an observation and never a
 /// decision, which is what lets the supervisor's monotonicity check mean
 /// something.
 #[derive(Debug)]
@@ -629,7 +629,7 @@ fn linux_command_domain_error(error: &CgroupError) -> SupervisorError {
 /// plan, and the ceilings that plan derived. A backend composed from a
 /// different grant or a different compiled policy would still produce a
 /// `BackendIdentity`, a `ValidatedBackendPermit` and, eventually, a piece
-/// of contained evidence — all of them describing a command the durable
+/// of contained evidence, all of them describing a command the durable
 /// plan never described. The hash pair is the whole of what the handoff is
 /// asked for, and it is compared against the composer's own contracts
 /// rather than against anything the handoff also supplied.
@@ -841,13 +841,9 @@ impl ContainedDescendantDomain for LinuxCgroupV2Domain {
         })
     }
 
-    /// Kills the complete domain, durably recording the intent first.
-    ///
-    /// One `cgroup.kill` write reaches every process in the leaf whether or
-    /// not it shares a process group, a session, or a parent with the
-    /// leader, which is the property ADR-0006 requires of an accounting
-    /// domain. The first reason is retained; a later call re-issues the
-    /// idempotent kill rather than rewriting history.
+    /// Records kill intent before writing `cgroup.kill`, which reaches every
+    /// process in the leaf regardless of process group or ancestry. Repeated
+    /// calls preserve the first reason and reissue the idempotent kill.
     fn terminate_all(&mut self, reason: DomainTerminationRequest) -> Result<(), SupervisorError> {
         terminate_domain(&mut self.io, &mut self.prepared)
             .map_err(|error| linux_command_domain_error(&error))?;
@@ -1141,7 +1137,7 @@ pub(crate) struct LinuxDevelopmentExecSource {
 ///
 /// The unprefixed fields are the **control** halves: the same canary,
 /// launched by the same mechanism into the same kind of leaf, with
-/// exactly one containment layer removed — the path layer for the escape
+/// exactly one containment layer removed, the path layer for the escape
 /// pair, the syscall layer for the loopback pair. The `confined_` fields
 /// are the same runs with the complete compiled policy installed.
 ///
@@ -1303,7 +1299,7 @@ impl LinuxCgroupV2Backend {
     /// mode makes the target's own project view, plus the read-only
     /// runtime surfaces the kernel resolves before the target's first
     /// instruction. The write scopes are the compiled write scopes
-    /// resolved against that execution root, and nothing else — in
+    /// resolved against that execution root, and nothing else, in
     /// particular no temporary directory, which is where the escape
     /// canary aims.
     fn development_containment_policy(
@@ -1452,8 +1448,8 @@ enum CanaryLeafSource {
     SelfCreated(PathBuf),
     /// One leaf the probe journal created, owns, and will remove.
     ///
-    /// Every canary in the suite adopts this same leaf in turn — the suite
-    /// reserves, runs and drops strictly sequentially — and the adoption
+    /// Every canary in the suite adopts this same leaf in turn, the suite
+    /// reserves, runs and drops strictly sequentially, and the adoption
     /// re-checks the kernel's identity against `identity` every time, so a
     /// leaf substituted mid-suite is refused rather than used.
     Journaled {

@@ -42,7 +42,7 @@ use grok_build_runner::{
 // The v15 launch-preparation and contained-command-release symbols have exactly
 // one consumer, `a_contained_command_runs_on_an_installed_native_service`, which
 // is `#[cfg(target_os = "linux")]`. Imported unconditionally they are unused on
-// macOS; deleted they break the Linux build. Gate the import to its consumer —
+// macOS; deleted they break the Linux build. Gate the import to its consumer,
 // do not resolve this by deletion.
 #[cfg(target_os = "linux")]
 use grok_build_runner::{
@@ -2992,7 +2992,7 @@ fn binary_and_private_state_observations_change_after_substitution() {
     // The link-count clause is load-bearing, not incidental: an image with a
     // second name can be executed under a name the launcher never inspected.
     // Admit a copy, add one hardlink, watch the identical bytes be refused,
-    // remove the alias, and watch admission come back — so the refusal is
+    // remove the alias, and watch admission come back, so the refusal is
     // attributable to the link count and to nothing else about the file.
     let linked = fixture.top.join("linked-runner");
     fs::copy(binary, &linked).expect("copy singly linked runner");

@@ -1096,8 +1096,8 @@
 
     /// The frozen real version-1 probe journal envelope.
     ///
-    /// Produced by the version-1 probe machine itself — the `configured`
-    /// generation of a complete `drive_durable_probe` run — and committed
+    /// Produced by the version-1 probe machine itself, the `configured`
+    /// generation of a complete `drive_durable_probe` run, and committed
     /// rather than recorded, so restart validation is driven by bytes that
     /// really existed rather than by a hand-written document.
     const PROBE_JOURNAL_V1_RECORD: &str =
@@ -1212,8 +1212,8 @@
     ///
     /// This is the increment's central claim, and it is asserted in both
     /// directions rather than argued. Three canary episodes run to their
-    /// endpoints and every one of them is journaled — the claim survives a
-    /// restart and is readable from the reopened store — while the command
+    /// endpoints and every one of them is journaled, the claim survives a
+    /// restart and is readable from the reopened store, while the command
     /// journal's one-episode-per-effect invariant is untouched throughout:
     /// the effect is still fresh after three canaries, still refused after the
     /// command's own `CreateIntended`, and a fourth canary still runs after
@@ -1304,7 +1304,7 @@
         //    retains it inside the `PreparedDomain` for the domain's whole
         //    life; `run_canary_episode` opens by acquiring the same lock. A
         //    second acquisition is refused by name, so a canary episode is
-        //    unreachable from the moment the command's leaf exists — and the
+        //    unreachable from the moment the command's leaf exists, and the
         //    leaf's name is an unpredictable nonce minted inside that same
         //    locked section, so there is no earlier moment at which the leaf
         //    exists to prove anything about.
@@ -1382,7 +1382,7 @@
     ///
     /// Written by the version-3 journal machine itself, six `persist`
     /// generations driven to `Held`, and committed at `ada11a4` before the
-    /// version-4 bump — because after it no tree can emit one.
+    /// version-4 bump, because after it no tree can emit one.
     const HELD_LAUNCHER_PROTOCOL_V3_RECORD: &str =
         "fixtures/linux-held-launcher/held-launcher-protocol-v3-held-record.json";
 
@@ -1390,7 +1390,7 @@
     ///
     /// Version 3 differs from version 2 in a way worth stating: it *did* carry
     /// a containment artefact. What version 4 adds is a second filter beside
-    /// the first, so the refusal cannot say version 3 had no artefact — only
+    /// the first, so the refusal cannot say version 3 had no artefact, only
     /// that it had no channel for this one. The classifier says exactly that.
     #[test]
     fn a_persisted_protocol_v3_release_binding_is_refused_by_a_message_naming_both_versions() {
@@ -1437,10 +1437,10 @@
 
     /// The frozen real protocol-version-2 command-journal record.
     ///
-    /// Written by the version-2 journal machine itself — six `persist`
+    /// Written by the version-2 journal machine itself, six `persist`
     /// generations driven to `Held`, so the file carries a genuine version-2
     /// `HeldExecReleaseBinding` rather than a document composed to look like
-    /// one — and committed rather than recorded, so restart validation is
+    /// one, and committed rather than recorded, so restart validation is
     /// driven by bytes that really existed.
     const HELD_LAUNCHER_PROTOCOL_V2_RECORD: &str =
         "fixtures/linux-held-launcher/held-launcher-protocol-v2-held-record.json";
@@ -1451,7 +1451,7 @@
     /// The envelope's own `format_version` is **2 on both sides** and stays
     /// there: the command journal's framing did not change, the held-launcher
     /// protocol inside it did. That is exactly why the refusal needs its own
-    /// classifier — a reader that only checked the envelope version would
+    /// classifier, a reader that only checked the envelope version would
     /// admit this document and then meet the release binding as a serde
     /// missing-field error naming neither protocol version.
     #[test]
@@ -1537,8 +1537,8 @@
             serde_json::json!("inert_internal_test")
         );
 
-        // And a record with no release binding at all — the normal shape of
-        // every generation before one is planned — is not touched by any of
+        // And a record with no release binding at all, the normal shape of
+        // every generation before one is planned, is not touched by any of
         // this. The classifier must not turn an absence into a stale version.
         let unplanned = serde_json::json!({ "state": "prepared" });
         classify_held_launcher_protocol(Some(&unplanned)).unwrap();

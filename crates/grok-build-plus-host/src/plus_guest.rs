@@ -29,10 +29,10 @@ pub const PLUS_GUEST_HELPER_ENV: &str = "GROK_BUILD_PLUS_GUEST_HELPER";
 /// Env: `grok-build-runner` the installed-service session should exec.
 pub const PLUS_GUEST_RUNNER_ENV: &str = "GROK_BUILD_RUNNER_BINARY";
 
-/// Default install root used by the Phase 1 12/12 drive on this guest.
+/// Default guest service install root.
 pub const PLUS_DEFAULT_INSTALL_ROOT: &str = "/opt/grok-build/phase1/install";
 
-/// Native-only macOS launch (ADR-0011) when the guest path is down.
+/// Native macOS launch result when the guest path is unavailable.
 pub const PLUS_NATIVE_MACOS_ONLY: &str = "native macOS-only: contained launch needs fexecve/execveat, which this Mac does not provide (ADR-0011). /dev/fd is not admitted.";
 
 /// Guest/installed-service path is not usable.
@@ -1018,10 +1018,10 @@ fn verify_install_root_via_colima(colima: &Path, root: &Path) -> super::PlusInst
     }
 }
 
-/// Env: absolute `cgroup.procs` of the sibling harness (Phase 1 `service`).
+/// Environment override for the sibling harness's absolute `cgroup.procs` path.
 pub const PLUS_HARNESS_CGROUP_PROCS_ENV: &str = "GROK_BUILD_PLUS_HARNESS_CGROUP_PROCS";
 
-/// Default sibling harness used by the Phase 1 12/12 drive.
+/// Default sibling harness cgroup.
 pub const PLUS_DEFAULT_HARNESS_PROCS: &str = "/sys/fs/cgroup/gbd-phase1/service/cgroup.procs";
 
 /// True when this process is already in the sibling harness cgroup.

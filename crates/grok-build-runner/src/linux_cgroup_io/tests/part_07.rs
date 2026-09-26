@@ -393,7 +393,7 @@
         // The anchor has already refused a parent that is not the delegator's,
         // so the *plan's* own clause cannot be reached from this host by
         // varying the host. It is reached instead by varying exactly one field
-        // of one real observation — and the value substituted in is not
+        // of one real observation, and the value substituted in is not
         // invented either: it is the service uid the installer committed.
         let service_owned_parent = {
             let mut observation = facts.service_cgroup_parent.kernel_observation();

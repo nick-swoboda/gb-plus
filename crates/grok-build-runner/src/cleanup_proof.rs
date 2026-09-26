@@ -1052,10 +1052,7 @@ pub(crate) mod tests {
             command_network: MacosHelperNetwork::Denied,
             authenticated_at_unix_ms: 800,
             peer_requirement_matched: true,
-            // ADR-0012: a locally attested helper is the production peer. This
-            // fixture used to require `production_signed: true`, i.e. an Apple
-            // Developer ID, which is what closed the terminal-evidence chain to
-            // every build-from-source installation (blocker B-02).
+            // Local code attestation is sufficient for runtime admission.
             attestation: MacosHelperAttestation::LocalCodeIdentity {
                 install_audit: MacosHelperInstallAudit {
                     auditing_uid: 501,
@@ -1202,18 +1199,8 @@ pub(crate) mod tests {
         assert_eq!(reopened, proof);
     }
 
-    /// Blocker B-02, closed and measured rather than argued.
-    ///
-    /// `ValidatedCommandDomainCleanupProof::from_macos_candidate` is the only
-    /// macOS constructor for terminal command-domain evidence, and it validates
-    /// the admission session inside the journal record. Before ADR-0012 that
-    /// session had to be `production_signed`, i.e. Developer-ID attested, so no
-    /// build-from-source installation could ever mint terminal evidence. This
-    /// test pins the new predicate from both sides: a locally attested session
-    /// closes the chain, and an unattested one still cannot.
-    ///
-    /// The attestation kind reaches the durable bytes, so a reader of a stored
-    /// proof can always tell which property it rests on.
+    /// Local code attestation permits terminal evidence; an unattested session
+    /// must still fail. The durable proof preserves which attestation was used.
     #[test]
     fn a_locally_attested_admission_session_closes_the_macos_terminal_evidence_chain() {
         let candidate = macos_candidate();
@@ -1276,11 +1263,8 @@ pub(crate) mod tests {
         );
     }
 
-    /// Publisher attestation is admitted by the same constructor.
-    ///
-    /// Phase 5 packaging will sign and notarize the shipped helper. When that
-    /// lands the runtime predicate must not change: the same chain closes, and
-    /// the only difference is which provenance the durable bytes record.
+    /// Publisher attestation uses the same admission checks as local attestation
+    /// and records its additional provenance in the durable proof.
     #[test]
     fn a_publisher_attested_admission_session_uses_the_identical_chain() {
         let mut candidate = macos_candidate();

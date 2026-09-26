@@ -59,7 +59,7 @@ ls -ld "$CGROUP_PARENT/$CONTROL_DELEGATION"
 #   * give the service a cgroup of its own *beneath the delegation's parent*,
 #     not beneath the delegation, because `validate_for_prepare` requires the
 #     delegation itself to have no children and no processes; and
-#   * delegate the parent's `cgroup.procs` — the file, never the directory. The
+#   * delegate the parent's `cgroup.procs`, the file, never the directory. The
 #     parent DIRECTORY stays installer-owned and mode 755, which is what
 #     `observe_anchored_plan_facts` re-reads, so the service still cannot create
 #     a sibling delegation or rmdir its own.
@@ -73,8 +73,8 @@ ls -l "$CGROUP_PARENT/cgroup.procs"
 # unset, the parent stays installer-owned, which is how cgroup v2 delegation is
 # documented: the delegator keeps the parent and chowns only the delegated
 # subtree, and the production plan built from it validates. Set, the parent is
-# chowned to the service — a parent the service can create siblings in and
-# rmdir this delegation from — and the anchored-facts mint refuses it before any
+# chowned to the service, a parent the service can create siblings in and
+# rmdir this delegation from, and the anchored-facts mint refuses it before any
 # plan exists. Nothing else varies between the two runs.
 SERVICE_OWNED_PARENT="${GBD_CANARY_SERVICE_OWNED_CGROUP_PARENT:-}"
 if [ -n "$SERVICE_OWNED_PARENT" ]; then

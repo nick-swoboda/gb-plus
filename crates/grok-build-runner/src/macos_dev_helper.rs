@@ -118,7 +118,7 @@ impl Display for MacosHelperTopology {
 /// * `SameImageThread` serves the connection from a thread of the client's own
 ///   process. It is used by in-crate tests, where `cargo test --lib` builds no
 ///   bin target at all. Peer authentication still runs for real against a real
-///   kernel audit token and a real code-directory-hash requirement — the peer
+///   kernel audit token and a real code-directory-hash requirement, the peer
 ///   is simply the same image, which is exactly what the pin then states.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -138,28 +138,12 @@ impl Display for MacosDevelopmentHelperTopology {
     }
 }
 
-/// Authenticated context for one unprivileged helper connection.
-///
-/// Field-for-field this mirrors the production `MacosHelperSession` so the
-/// two contracts stay comparable under review, with three deliberate
-/// differences: the leading `topology` tag, an `identity_pool_digest` over a
-/// *generation* pool rather than an account pool, and a validator that requires
-/// `dedicated_account_pool == false`.
-///
-/// That last clause is the whole distinction, and ADR-0012 re-founded it. Until
-/// then the disjoint field was `production_signed`, forced to `false`, because
-/// the production contract demanded an Apple Developer ID that no
-/// build-from-source installation can have. Local attestation is now the
-/// runtime predicate for both paths, so this session publishes the *same*
-/// [`MacosHelperAttestation`] a production session does, and what separates the
-/// two is the host authority nobody can fake: production owns three
-/// otherwise-unused local execution accounts, and this build owns generation
-/// directories under the invoking user's own real UID.
-///
-/// There is intentionally no `From`, `TryFrom`, `into_production`, or
-/// `as_production` on this type. The production terminal-evidence chain
-/// additionally requires a `MacosAssignedIdentity` naming a real local account,
-/// and nothing in this module produces one.
+/// Authenticated session for an unprivileged helper.
+/// The topology tag and generation-pool digest distinguish it from a production
+/// account pool; validation requires `dedicated_account_pool == false`.
+/// Both paths require code attestation, but only production can supply the
+/// `MacosAssignedIdentity` required for terminal evidence. This type offers no
+/// conversion to a production session.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct MacosDevelopmentHelperSession {
@@ -246,20 +230,14 @@ impl MacosDevelopmentHelperSession {
         domain_digest(DEVELOPMENT_SESSION_DOMAIN, &preimage)
     }
 
-    /// Validates the unprivileged-helper session contract.
-    ///
-    /// It shares the whole ADR-0012 attestation predicate with
-    /// `MacosHelperSession::validate` — an unattested helper or an install path
-    /// that admits an untrusted writer is refused here exactly as it is there —
-    /// and adds one clause the production contract does not have: this helper
-    /// owns no dedicated execution accounts and may not claim otherwise.
+    /// Validates code attestation, install-path ownership and the development
+    /// session's refusal to claim dedicated execution accounts.
     ///
     /// # Errors
     ///
-    /// Fails for an unsupported protocol version, a zero policy version or
-    /// authentication time, an unmatched peer requirement, an unattested or
-    /// ill-installed helper, a dedicated-account-pool claim, or a digest that
-    /// does not bind the canonical preimage.
+    /// Fails for invalid versions or timestamps, an unmatched peer requirement,
+    /// an unattested or unsafe installation, a dedicated-account claim, or a
+    /// digest that differs from the canonical preimage.
     pub(crate) fn validate(&self) -> Result<(), MacosDevelopmentHelperError> {
         if self.protocol_version != MACOS_HELPER_PROTOCOL_VERSION {
             return Err(MacosDevelopmentHelperError::invalid(
@@ -1023,7 +1001,7 @@ pub(crate) struct MacosDevelopmentDescriptorExecProbe {
 /// The distinction is not cosmetic. With a separate applier program the
 /// launcher's last observation of the child is taken *before* that program
 /// runs, and the program then executes arbitrary code of its own before
-/// `execve`ing the target — so the launcher has no observation point at the
+/// `execve`ing the target, so the launcher has no observation point at the
 /// target's own exec and cannot prove what the target inherited. With the
 /// in-process applier the launcher owns the child from `fork` to `execve` and
 /// reads the exact table the kernel is about to carry across the exec.
@@ -1341,7 +1319,7 @@ fn single_threaded_launch_component() -> bool {
 /// requirement in a notarized installation manifest. This is the development
 /// equivalent: the client writes it into the dev state root before starting
 /// the helper, and the helper will admit nothing that is not named here. In
-/// particular a caller cannot add an executable search root — only the exact
+/// particular a caller cannot add an executable search root, only the exact
 /// entries in `executables` can ever be launched.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -2261,10 +2239,8 @@ fn probe_descriptor_exec(
         Ok(pid) => {
             if let Some(pid) = Pid::from_raw(pid) {
                 let _ignored = rustix::process::kill_process(pid, rustix::process::Signal::KILL);
-                // Same `START_SUSPENDED` child, same D-0013 hazard: one SIGKILL
-                // can leave the task suspended with the kill pending, so this
-                // reap must be the bounded escalating one, never a blocking
-                // `waitpid` that would hang the probe forever.
+                // A suspended child may keep one SIGKILL pending. Re-signal and reap within
+                // a deadline instead of blocking in `waitpid`.
                 let _ignored = reap_exact_condemned_child(pid);
             }
             MacosDevelopmentDescriptorExecProbe {
@@ -2467,7 +2443,7 @@ impl MacosDevelopmentHelperClient {
     ///
     /// For the separate-process endpoint that is the helper binary Cargo built
     /// beside this executable; for the same-image endpoint the helper *is* this
-    /// executable, so the two audits describe the same file — which is the
+    /// executable, so the two audits describe the same file, which is the
     /// honest answer, not a shortcut.
     fn helper_program(&self) -> Result<PathBuf, MacosDevelopmentHelperError> {
         match self.endpoint {
@@ -2889,7 +2865,7 @@ fn unauthenticated_placeholder_session(
 ///
 /// The separately named bin target is preferred whenever Cargo built it beside
 /// the running executable. `cargo test --lib` builds no bin target at all, so
-/// in-crate tests fall back to the same-image thread — and the choice is
+/// in-crate tests fall back to the same-image thread, and the choice is
 /// recorded in the published session's `helper_topology`, digested into its
 /// `session_digest`, and carried in every artifact derived from it, so a reader
 /// always knows which shape produced a result.

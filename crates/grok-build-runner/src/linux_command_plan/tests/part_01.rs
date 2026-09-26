@@ -126,7 +126,7 @@
     /// The grant's workspace root is deliberately absent: this fixture's
     /// workspace object carries the *live* identity of a real temporary
     /// directory, so a fixture that named it would have to restate a value it
-    /// cannot know. A production ruleset does grant it — see
+    /// cannot know. A production ruleset does grant it, see
     /// `mint_mandatory_control_artefacts`, which reads that identity from the
     /// descriptor the service holds.
     fn fixture_landlock_ruleset() -> LinuxLandlockRulesetV1 {
@@ -1428,19 +1428,9 @@
         assert!(ValidatedLinuxProductionCommandPlanV1::from_plan(dropped_control_file).is_err());
     }
 
-    /// The plan carries a Landlock ruleset and a seccomp filter, and it still
-    /// cannot carry a fabricated one.
-    ///
-    /// ADR-0013 recorded the open door: five Landlock digests and three seccomp
-    /// digests were checked only by `validate_nonzero_digest`, which rejects an
-    /// all-zero string and admits every other value, for two subsystems that
-    /// did not exist. Schema version 3 closed it by removing the fields.
-    /// Version 4 reopens the *fields* without reopening the *door*, and this
-    /// test is the enforced half of that claim: a digest must be the digest of
-    /// the artefact beside it, and every scope must be a retained directory of
-    /// this very plan with the identity the object table already carries. A
-    /// value that was merely invented now fails a comparison rather than
-    /// passing a non-zero check.
+    /// Ruleset and filter digests must match their artefacts. Every scope must
+    /// name a retained directory with the plan's recorded identity. Nonzero
+    /// but fabricated digests must fail these comparisons.
     #[test]
     fn the_committed_kernel_control_artefacts_cannot_be_invented() {
         let valid = fixture(RunnerRole::Worker);
@@ -1750,8 +1740,8 @@
 
     /// The Bubblewrap admission and the acquisition step pin the same bytes.
     ///
-    /// Two levels of pin exist — the `.deb` digest Canonical publishes and the
-    /// digest of the extracted `bwrap` the image admits — and they live in two
+    /// Two levels of pin exist, the `.deb` digest Canonical publishes and the
+    /// digest of the extracted `bwrap` the image admits, and they live in two
     /// files, so drift between them is the obvious way this could rot into a
     /// chain that looks closed and is not. The script is read here and every
     /// pinned value is required to appear in it verbatim.
@@ -1818,7 +1808,7 @@
     ///
     /// The version check is the load-bearing one. `validate_binaries` refuses a
     /// `bubblewrap_version` that is empty, longer than `MAX_VERSION_BYTES`, or
-    /// carries a byte outside ASCII graphic-or-space — so an admitted version
+    /// carries a byte outside ASCII graphic-or-space, so an admitted version
     /// string that could not be committed to a plan is a defect that would only
     /// surface at mint time.
     #[test]
@@ -1884,8 +1874,8 @@
     ///
     /// Each enforced half varies exactly one input against the same control, in
     /// the discipline this project applies to its canaries. The control cannot
-    /// be the real `bwrap` — that file is acquired at image-build time and is
-    /// not in the tree — so the control here is a synthetic image whose digest
+    /// be the real `bwrap`, that file is acquired at image-build time and is
+    /// not in the tree, so the control here is a synthetic image whose digest
     /// is what the admission is temporarily crossed to. Every *other* row then
     /// varies one field against that same control.
     #[test]
@@ -2014,7 +2004,7 @@
         );
 
         // The admitted digest is not this synthetic image's digest, which is
-        // why the mint refuses it — restated here so the asymmetry between this
+        // why the mint refuses it, restated here so the asymmetry between this
         // test and the one above is explicit rather than implied.
         assert_ne!(Digest::sha256(&image).as_str(), admitted.sha256);
 
@@ -2053,8 +2043,8 @@
     /// The four installer-anchored identities and two anchored digests one
     /// setup-channel statement is built from.
     ///
-    /// The numbers are shaped like the ones the anchor canary measures — a
-    /// cgroup hierarchy on its own device, a service state root on another —
+    /// The numbers are shaped like the ones the anchor canary measures, a
+    /// cgroup hierarchy on its own device, a service state root on another,
     /// but no assertion below depends on their values. Every one of them is
     /// about what changes when one of them changes.
     struct SetupChannelAnchoredFixture {
@@ -2386,7 +2376,7 @@
         );
 
         // Enforced: an identity that could not survive the object table's own
-        // `validate` — a directory carrying a byte length.
+        // `validate`, a directory carrying a byte length.
         let mut invalid_identity = SetupChannelAnchoredFixture::new();
         invalid_identity.state_root.byte_length = Some(4_096);
         assert!(

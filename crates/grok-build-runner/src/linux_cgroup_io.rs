@@ -1760,7 +1760,7 @@ fn encode_envelope_with_plan(
 /// Nothing is migrated. A durable release binding describes a process image an
 /// earlier protocol was going to install, and rewriting it into a later
 /// protocol's shape would mean inventing the containment artefact the earlier
-/// protocol had no channel for — a plan committing nothing while a launcher
+/// protocol had no channel for, a plan committing nothing while a launcher
 /// installs something, which is the contradiction this project has refused
 /// since schema version 3.
 fn classify_held_launcher_protocol(

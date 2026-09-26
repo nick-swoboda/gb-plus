@@ -9,6 +9,7 @@
   controls, and verify the active selection before saving it.
 - Correct the bundled notice manifest after documentation cleanup and verify
   its file hashes and packaging pin together.
+- Exclude local file-owner metadata from the release ZIP.
 - Fix clean-runner Linux CI prerequisites and an x86-only test lint.
 - Correct CI test isolation and Linux development-probe linkage.
 - Speed up large workspace snapshots while retaining existing limits.

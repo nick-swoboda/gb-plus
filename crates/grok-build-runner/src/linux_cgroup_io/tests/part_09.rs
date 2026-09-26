@@ -23,7 +23,7 @@
     /// A cgroup that holds processes directly cannot enable controllers for its
     /// children. The container's cgroup-namespace root holds this test process,
     /// so the staging moves this process into a leaf of its own first, and
-    /// [`Drop`] moves it back and removes everything it created — including
+    /// [`Drop`] moves it back and removes everything it created, including
     /// after a panic.
     #[cfg(target_os = "linux")]
     struct StagedBootstrapCgroupTopology {
@@ -42,7 +42,7 @@
         /// Moves every process out of `from` and into `to`.
         ///
         /// A numeric-PID write, which production code deliberately never
-        /// performs — only the fixed held launcher self-attaches there. This is
+        /// performs, only the fixed held launcher self-attaches there. This is
         /// test staging on a container the test owns, not an authority path,
         /// and it exists because the kernel's no-internal-process rule leaves
         /// no other way to obtain a delegated cgroup on this host. The list is
@@ -231,8 +231,8 @@
 
         // The control. One input moves: this cgroup's `cgroup.subtree_control`
         // is empty, so a leaf created underneath carries no controller
-        // interface file at all. Everything else — the filesystem, the parent,
-        // the owner, the mode, the probe code — is identical.
+        // interface file at all. Everything else, the filesystem, the parent,
+        // the owner, the mode, the probe code, is identical.
         let (control_delegation, control_controllers, control_subtree, control_procs) =
             retain_staged_delegation(&staged.root, StagedBootstrapCgroupTopology::CONTROL);
         let refusal = probe_delegated_cgroup(
@@ -326,7 +326,7 @@
         let bubblewrap = probe_retained_bubblewrap_version(&held)
             .expect("the admitted Bubblewrap image reports its version");
         // The ruleset and the filter the probes install are the plan's, and the
-        // scope is still the directory that holds the admitted launcher — a
+        // scope is still the directory that holds the admitted launcher, a
         // real directory this suite has already authenticated a file inside.
         let ruleset = live_landlock_ruleset(
             resolved

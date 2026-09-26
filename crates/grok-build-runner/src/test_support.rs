@@ -1398,7 +1398,7 @@ pub struct StaticElfLinkageMeasurementV1 {
 /// This exists so a cross-crate test proves the *same* linkage the Linux plan
 /// would commit, using the *same* parser. A second hand-written program header
 /// walk in a test could disagree with the production one, and a test that
-/// disagrees with the code it guards is worse than no test — so there is
+/// disagrees with the code it guards is worse than no test, so there is
 /// exactly one walk in this workspace and this is the door to it.
 ///
 /// The path is opened `O_RDONLY | O_CLOEXEC | O_NOFOLLOW`, its length comes

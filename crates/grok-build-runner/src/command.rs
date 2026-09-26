@@ -463,13 +463,9 @@ impl LinuxSandboxPlan {
 )]
 pub(crate) mod contained_boundary;
 
-/// macOS dedicated-identity implementation of the contained backend contract.
-///
-/// The backend composes only material that already exists: the audited Seatbelt
-/// renderer and the supervisor-validated command authority. Every launch-path
-/// method returns a typed capability refusal until the signed helper transport
-/// selected by ADR-0006 is built, because a backend that cannot enforce a
-/// control must never claim it.
+/// macOS dedicated-identity containment backend.
+/// Launch requires an admitted helper and proof of every required control;
+/// unavailable capabilities return typed refusals.
 #[cfg(target_os = "macos")]
 #[allow(
     dead_code,
@@ -1655,7 +1651,7 @@ fn canonical_existing_path(path: &Path) -> Result<PathBuf, SupervisorError> {
 /// symlinked workspace: Seatbelt would otherwise match only the logical name
 /// and leave the content readable at the resolved location once the leaf
 /// appears. A parent that itself does not resolve contributes only the
-/// logical name — there is then no second location to close.
+/// logical name, there is then no second location to close.
 #[cfg(target_os = "macos")]
 fn push_denied_root(roots: &mut Vec<PathBuf>, lexical: PathBuf) {
     if let Ok(canonical) = fs::canonicalize(&lexical) {

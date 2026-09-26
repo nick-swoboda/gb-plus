@@ -1416,18 +1416,9 @@
         }
     }
 
-    /// D-0011 regression. `TimestampCursor::for_sprint` is built once from
-    /// durable state as it stands *before* the launch and advances by one per
-    /// `take()`, but the `Leased -> Running` boundary is minted from the host
-    /// wall clock after a real spawn and handshake. The schema-v15
-    /// `effect_intents_task_attempt_phase_fence` requires
-    /// `running.started_at_unix_ms <= NEW.created_at_unix_ms` for the
-    /// Running-phase `ProviderRequest`, and `task_attempt_running_boundary`'s
-    /// sibling verification fence requires `sealed_at_unix_ms >=
-    /// running.started_at_unix_ms`, so the cursor must resynchronize with the
-    /// authority-minted boundary before it stamps anything else. Without that
-    /// resynchronization this run dies with "task effect is not admitted by the
-    /// exact current attempt phase".
+    /// Provider and verification timestamps must follow the wall-clock
+    /// `Leased -> Running` boundary. Resynchronize the durable timestamp cursor
+    /// after the launch handshake so both schema-v15 phase fences admit them.
     #[test]
     fn wall_clock_running_boundary_still_admits_every_running_phase_effect() {
         let harness = Harness::new("wall-clock-running-boundary");

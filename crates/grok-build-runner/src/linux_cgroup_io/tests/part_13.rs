@@ -93,7 +93,7 @@
     /// are the statement that `LinuxCgroupV2Backend` can hold the native
     /// service's own `LinuxCgroupIo`, that composing it is gated by a clause
     /// taking the handoff **by reference** so a refusal cannot destroy live
-    /// delegation custody, and that the backend — not a canary beside it —
+    /// delegation custody, and that the backend, not a canary beside it,
     /// prepares and hands over this plan's one domain. A build in which any of
     /// them became test-only, changed shape or disappeared fails to compile
     /// rather than regressing to "the production backend cannot obtain a
@@ -168,7 +168,7 @@
     ///
     /// Nothing writes another process's pid. Each occupant is a direct child of
     /// this process and `exec`s, so none is an ancestor of another and no
-    /// signal addressed to a process group or session could reach the set —
+    /// signal addressed to a process group or session could reach the set,
     /// which is the property that makes a later whole-domain kill mean
     /// something.
     #[cfg(target_os = "linux")]
@@ -237,7 +237,7 @@
     /// happens on generation `linux-cgroup-v2-v1`: the backend prepares the
     /// leaf, the backend hands the handoff to the domain, and the domain's
     /// methods are the trait's. That is the difference the previous increment
-    /// could not buy — its domain was built beside the backend, so nothing it
+    /// could not buy, its domain was built beside the backend, so nothing it
     /// proved was about this generation.
     #[cfg(target_os = "linux")]
     #[allow(
@@ -265,7 +265,7 @@
         //
         // The substituted grant and policy are minted by the same production
         // issuer and compiler this run's own were, over a real second workspace
-        // directory. One input varies — which workspace the grant is over — and
+        // directory. One input varies, which workspace the grant is over, and
         // the clause `service_owned` performs is exercised by reference, so the
         // refusal costs the service none of its live delegation custody.
         let control_workspace = scratch.join("control-workspace");
@@ -320,8 +320,8 @@
         // This is the call the whole adoption increment exists for. The
         // production backend's own preflight drives a canary episode through
         // the probe journal it holds: the journal creates the leaf under a
-        // durable create-intent generation, the suite **adopts** it — no
-        // `mkdirat`, no minted name, no unlink — and the journal removes it
+        // durable create-intent generation, the suite **adopts** it, no
+        // `mkdirat`, no minted name, no unlink, and the journal removes it
         // under its own remove-intent generation. Whatever `enforced_controls`
         // says afterwards is a measurement of what a live canary proved here,
         // not a constant.
@@ -406,7 +406,7 @@
         // one-plan-scoped and the delegation is single-writer, so asking the
         // same backend for a second domain must not answer with one. It is also
         // the measurement behind this generation having no preflight probe
-        // suite — a probe domain and the command's domain cannot both exist.
+        // suite, a probe domain and the command's domain cannot both exist.
         match backend.prepare_service_domain() {
             Ok(_) => panic!("a second domain for the same one-plan-scoped authority was prepared"),
             Err(error) => println!("GBDDOMAIN control=second-domain detail={error}"),
@@ -669,7 +669,7 @@
         // episode ran on this generation, inside a leaf the probe journal
         // created and removed, and its installer is this backend's own
         // preflight. Every other control that episode proved, it proved about
-        // the probe journal's leaf — nothing on the command's own path
+        // the probe journal's leaf, nothing on the command's own path
         // installs Landlock, seccomp, the descriptor exec, the closed
         // descriptor table, the descriptor-relative cwd, the replaced
         // environment, the exact argv, the network mode or the external wall

@@ -1728,12 +1728,8 @@ fn source_policy_permits_only_the_closed_target_gated_unsafe_modules() {
                         .to_vec(),
                 ),
             ),
-            // The Linux containment release. `execve` is declared here so the
-            // held launcher can never reach `execvp`, whose `ENOEXEC` retry
-            // through `/bin/sh` (D-0009) put a shell inside the target's
-            // identity; `dup2` and `signal` carry the exact stdio and SIGPIPE
-            // setup `std`'s exec used to perform. All three are POSIX
-            // async-signal-safe.
+            // Direct `execve` avoids a shell fallback on `ENOEXEC`. `dup2` and `signal`
+            // install stdio and SIGPIPE state. All three calls are async-signal-safe.
             (
                 workspace.join(
                     "crates/grok-build-runner/src/linux_held_launcher/native_release.rs",

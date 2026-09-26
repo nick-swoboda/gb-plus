@@ -1371,10 +1371,9 @@ fn plus_admit_and_send(
     .map_err(PlusSendError::Session)
 }
 
-/// Join the sibling harness cgroup used by the Phase 1 12/12 drive.
-///
-/// Direct write from `user.slice` is EIO. Root can move this pid with
-/// `sudo -n tee`. Failure is a setup refusal, not a fake green terminal.
+/// Join the sibling harness cgroup. A direct write from `user.slice` fails
+/// with EIO, so the root helper moves this PID with `sudo -n tee`.
+/// Failure is reported as a setup refusal.
 fn plus_enter_sibling_harness_cgroup() -> Result<(), PlusLaunchError> {
     plus_join_sibling_harness_cgroup().map_err(PlusLaunchError::Setup)
 }

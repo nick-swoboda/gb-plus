@@ -42,8 +42,8 @@ impl LinuxRetainedPerCommandDirectories {
     ///
     /// The source of the clone is the held descriptor and the empty path with
     /// `AT_EMPTY_PATH`: there is no name for anything to have changed the
-    /// meaning of. What comes back is a real mount — the kernel answers a new
-    /// `STATX_MNT_ID_UNIQUE` for it — whose root dentry is the very directory
+    /// meaning of. What comes back is a real mount, the kernel answers a new
+    /// `STATX_MNT_ID_UNIQUE` for it, whose root dentry is the very directory
     /// `mask` digested.
     ///
     /// The clone is then **read through its own descriptor** and that read,
@@ -53,8 +53,8 @@ impl LinuxRetainedPerCommandDirectories {
     ///
     /// # Errors
     ///
-    /// Returns [`CgroupIoFailure`] when `open_tree` refuses — `EPERM` without
-    /// `CAP_SYS_ADMIN` is a refusal, not an absence — when the detached mount
+    /// Returns [`CgroupIoFailure`] when `open_tree` refuses, `EPERM` without
+    /// `CAP_SYS_ADMIN` is a refusal, not an absence, when the detached mount
     /// cannot be read completely, and on every refusal
     /// [`LinuxGitMaskMountBindingV1::from_cloned_mount_observation`] makes.
     pub(crate) fn clone_git_mask_mount(
@@ -120,43 +120,19 @@ impl LinuxAttachedGitMaskMount {
     }
 }
 
-/// Attaches a cloned `.git` mask mount below a held destination directory, and
-/// proves that what ends up there is that mount.
+/// Attaches a cloned `.git` mask through a retained destination directory.
+/// `move_mount` uses the source descriptor; readback through the same parent
+/// must match the committed unique mount identity and remain empty.
 ///
-/// `destination_parent` is the directory the project view is rooted at; the
-/// only name this call resolves is the single component
-/// [`GIT_MASK_DESTINATION_COMPONENT`], relative to that held descriptor.
-/// `move_mount` takes the source as a descriptor with `MOVE_MOUNT_F_EMPTY_PATH`,
-/// so the mount that is attached is the one whose identity the binding carries
-/// and there is nothing for a name to have changed underneath.
-///
-/// Afterwards the destination is opened back through the **same** held parent
-/// and read completely, and the binding is required to recognise it. A
-/// different directory mounted there, the same directory reached through a
-/// different mount, or a destination that gained an entry between the two
-/// reads is refused. The kernel does not reuse `STATX_MNT_ID_UNIQUE`, which is
-/// what makes the last of those a real distinction rather than a formality.
-///
-/// This is deliberately not a "mount and report success" call. Success here
-/// means the destination was measured and matched.
-///
-/// **The mount is consumed.** `move_mount` on an already-attached mount is a
-/// *move*, not a copy — measured, in `gbd-linux:1.97.0`: attaching the same
-/// descriptor at a second destination succeeds and silently vacates the first.
-/// A `.git` mask that could be moved out from under the view it masks is not a
-/// mask, so taking the mount by value is what makes a second attach not
-/// express rather than merely refused.
+/// Consumes the mount because attaching it a second time would move it away
+/// from the first destination.
 ///
 /// # Errors
 ///
-/// Returns [`CgroupIoFailure`] when `move_mount` refuses — a destination
-/// descriptor from a mount namespace other than the caller's current one is
-/// one of the ways it does, and that is a refusal — when the destination
-/// cannot be read back completely, and on every refusal
-/// [`LinuxGitMaskMountBindingV1::require_attached_mount`] makes. Every failure
-/// after `move_mount` has returned is reported [`EffectCertainty::Ambiguous`],
-/// because a mount really is attached at that point and saying otherwise would
-/// describe a namespace that does not exist.
+/// Returns [`CgroupIoFailure`] for a refused mount, incomplete readback or a
+/// [`LinuxGitMaskMountBindingV1::require_attached_mount`] mismatch. Failures after
+/// `move_mount` succeeds carry [`EffectCertainty::Ambiguous`] because the mount
+/// has already changed the namespace.
 #[cfg(target_os = "linux")]
 pub(crate) fn attach_git_mask_mount(
     mask_mount: LinuxRetainedGitMaskMount,
@@ -212,7 +188,7 @@ fn mounted_and_then_failed(failure: CgroupIoFailure) -> CgroupIoFailure {
 /// `open_tree` returned.
 ///
 /// `open_tree` hands back an `O_PATH`-style descriptor, which cannot be
-/// enumerated directly — the same constraint `cap-std`'s directory descriptors
+/// enumerated directly, the same constraint `cap-std`'s directory descriptors
 /// impose, and the reason [`chmod_held_directory`] exists. `"."` relative to
 /// that descriptor cannot be a symlink and cannot name another object, so
 /// reopening it is not a path re-resolution: it is the same mount root, opened
@@ -259,8 +235,8 @@ const MAX_BUBBLEWRAP_VERSION_STDOUT_BYTES: usize = 256;
 
 /// Domain separator for the Bubblewrap probe's result commitment.
 ///
-/// The result digest commits to what this run of the probe actually observed —
-/// the exit status and the exact stdout bytes — so it is a measurement of the
+/// The result digest commits to what this run of the probe actually observed,
+/// the exit status and the exact stdout bytes, so it is a measurement of the
 /// run rather than a restatement of the contract constant, which is what
 /// [`BUBBLEWRAP_BOOTSTRAP_PROBE_CONTRACT`] already commits to separately.
 #[cfg(target_os = "linux")]
@@ -717,7 +693,7 @@ const SECCOMP_BOOTSTRAP_PROBE_PERMITTED_TARGET: &str = "permitted-syscall";
 ///
 /// A filter compiled from a plan denies whatever the plan committed, but the
 /// child has to *call* one of those syscalls to prove the filter, and calling
-/// an arbitrary number would need a raw `syscall(2)` — new `unsafe` and new
+/// an arbitrary number would need a raw `syscall(2)`, new `unsafe` and new
 /// FFI, both refused. `socket(2)` is reachable through `rustix::net::socket`,
 /// so the controller instead requires the committed filter to deny it: a plan
 /// whose filter does not cover `socket` cannot be proven by this probe and is
@@ -725,7 +701,7 @@ const SECCOMP_BOOTSTRAP_PROBE_PERMITTED_TARGET: &str = "permitted-syscall";
 const SECCOMP_BOOTSTRAP_PROBE_INVOKED_SYSCALL: &str = "socket";
 
 /// The syscall the permitted arm invokes, which the committed filter must not
-/// deny — otherwise the control run would prove nothing about the filter.
+/// deny, otherwise the control run would prove nothing about the filter.
 const SECCOMP_BOOTSTRAP_PROBE_SURVIVING_SYSCALL: &str = "getppid";
 
 /// Domain separator for the Landlock probe's result commitment.
@@ -1328,7 +1304,7 @@ fn decode_service_bootstrap_probe_report(
 ///
 /// The caller varies nothing: the ruleset is the plan's, including the object
 /// it states must be denied. A control run is obtained by handing a different
-/// ruleset — one whose witness the ruleset actually grants — because the child
+/// ruleset, one whose witness the ruleset actually grants, because the child
 /// builds and applies whatever it is given either way.
 ///
 /// # Errors
@@ -1572,7 +1548,7 @@ fn open_admitted_bubblewrap_parent(resolved_path: &str) -> Result<(Dir, String),
 ///
 /// Every field of the returned value is a live kernel read. Nothing here
 /// invents a digest, and nothing here decides whether what it measured is what
-/// the plan wanted — that is `validate_service_bootstrap_evidence`'s job, and
+/// the plan wanted, that is `validate_service_bootstrap_evidence`'s job, and
 /// `publish` calls it before the artifact is written.
 ///
 /// # Errors
@@ -1678,8 +1654,8 @@ const LINUX_NATIVE_SERVICE_BOOTSTRAP_PRODUCTION_MINT: fn(
 
 /// Name the sealed setup-channel memfd is created under.
 ///
-/// A memfd name is not an identity — it appears in `/proc/self/fd` as
-/// `/memfd:<name> (deleted)` and nothing compares it — so it is here for the
+/// A memfd name is not an identity, it appears in `/proc/self/fd` as
+/// `/memfd:<name> (deleted)` and nothing compares it, so it is here for the
 /// operator reading `lsof`, and every actual check below is against the inode,
 /// the seals and the bytes.
 #[cfg(target_os = "linux")]
@@ -1730,7 +1706,7 @@ impl LinuxNativeServiceSealedSetupChannel {
 ///
 /// Returns [`CgroupIoFailure`] when the statement cannot be encoded, when any
 /// of the memfd calls fails, when the readback is short, and on every refusal
-/// [`AuthenticatedSetupChannelV1::authenticate_sealed`] makes — including a
+/// [`AuthenticatedSetupChannelV1::authenticate_sealed`] makes, including a
 /// readback that differs from a fresh encoding of the same anchored statement.
 #[cfg(target_os = "linux")]
 pub(crate) fn seal_linux_native_service_setup_channel(
@@ -1834,7 +1810,7 @@ fn observe_retained_file_kernel_facts(
 
 /// The service's own ends of the five setup pipes.
 ///
-/// The plan commits nothing about them — a pipe's peer is not a plan object —
+/// The plan commits nothing about them, a pipe's peer is not a plan object,
 /// so nothing here is compared against the plan, and that is exactly why they
 /// are **not** inside the capability: a capability field no validator reads is
 /// how unchecked state gets carried under an authenticated name. They are
@@ -1873,7 +1849,7 @@ impl LinuxNativeServiceRetainedSetupPipePeers {
 /// # Errors
 ///
 /// Returns [`CgroupIoFailure`] when the pipe cannot be created, and when a
-/// caller asks for a read-write pipe endpoint — no canonical role has one, and
+/// caller asks for a read-write pipe endpoint, no canonical role has one, and
 /// a pipe end cannot be both.
 #[cfg(target_os = "linux")]
 fn create_linux_native_service_setup_pipe(
@@ -1976,7 +1952,7 @@ impl LinuxNativeServiceSetupDescriptorCapability {
     /// closure names a retained object outside the closed set above, when the
     /// working directory cannot be reached from the retained execution root by
     /// a no-follow walk, when a pipe cannot be created, and on every refusal
-    /// the untouched `validate_for` makes — which is the same validator the
+    /// the untouched `validate_for` makes, which is the same validator the
     /// test constructor has always had to satisfy.
     #[allow(
         clippy::too_many_lines,
@@ -2255,7 +2231,7 @@ fn run_child_descriptor_probe(mut arguments: std::env::ArgsOs) -> std::process::
     }
 }
 
-/// Receives the placement, performs it, and stops — leaving fd 0 alone.
+/// Receives the placement, performs it, and stops, leaving fd 0 alone.
 ///
 /// Every step is ordinary safe Rust performed by this process on itself, after
 /// its own `execve`, and this mode makes **no** `dup2` call. The transport
@@ -2309,15 +2285,15 @@ fn observe_child_descriptor_table() -> Result<(), String> {
 ///
 /// The placement's first target is **0**, and that is the whole difference
 /// between this mode and the observe mode. Every target of 3 or above is placed
-/// with `F_DUPFD_CLOEXEC`, so it carries close-on-exec — the clause inheritance
+/// with `F_DUPFD_CLOEXEC`, so it carries close-on-exec, the clause inheritance
 /// cannot meet. Fd 0 is then installed with `dup2(2)`, which closes the
 /// placement transport as a side effect of overwriting it and clears
-/// `FD_CLOEXEC` on the result — the clause `SCM_RIGHTS` cannot meet, and the
+/// `FD_CLOEXEC` on the result, the clause `SCM_RIGHTS` cannot meet, and the
 /// exact state the plan requires of fds 0..=2.
 ///
 /// `dup2` is the one call here that needs `unsafe`, it is already declared and
-/// already used by `linux_release_exec` — the single Linux module on the closed
-/// unsafe allowlist — and it runs in an ordinary post-`execve` process, not
+/// already used by `linux_release_exec`, the single Linux module on the closed
+/// unsafe allowlist, and it runs in an ordinary post-`execve` process, not
 /// between `fork` and `exec`.
 #[cfg(target_os = "linux")]
 fn materialise_child_launch_closure_table() -> Result<(), String> {

@@ -4636,9 +4636,9 @@ pub(super) fn recover_mutation_snapshot(
 /// initialization carries only the fixed shadow *root*, `WorkerCreateShadow`
 /// materializes it from the worker's own live capture, and the runner refuses
 /// to initialize a worker whose fixed shadow root already exists
-/// (`fixed_shadow_leaf`). This check is reached exactly once per sprint — only
+/// (`fixed_shadow_leaf`). This check is reached exactly once per sprint, only
 /// when no planning effect exists yet, therefore before the graph, the attempt,
-/// and the launch — so at this point the shadow is required to be *absent*.
+/// and the launch, so at this point the shadow is required to be *absent*.
 ///
 /// Absence is the strictly stronger statement: it proves nothing, including the
 /// trusted desktop itself, pre-seeded the worker's private workspace. A

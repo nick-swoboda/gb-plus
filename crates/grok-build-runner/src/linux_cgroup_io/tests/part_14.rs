@@ -4,7 +4,7 @@
     // a suite runs inside a leaf the probe journal created and reports plain
     // data back, and `canary_evidence_from_suite_report` decides what of that
     // report is admissible as durable evidence. Everything asserted here is
-    // decided on the journal's side of that boundary, which is the point — a
+    // decided on the journal's side of that boundary, which is the point, a
     // suite that could write its own record could name its own capability.
 
     /// One suite report, as a live suite would hand it back.

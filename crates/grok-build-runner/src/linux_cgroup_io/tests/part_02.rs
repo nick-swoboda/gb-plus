@@ -1412,7 +1412,7 @@
     ///
     /// This is the enforced form of the claim the unfreeze was granted for.
     /// The two probe-result digests used to be checked only by
-    /// `digest_is_zero`, so **any** non-zero value bound any plan — and the
+    /// `digest_is_zero`, so **any** non-zero value bound any plan, and the
     /// value this repository's own fixture carried was a literal
     /// `Digest::sha256(b"test-only-complete-…")`. It is submitted here
     /// unchanged, and it is refused. Every version-3 refusal is then re-driven

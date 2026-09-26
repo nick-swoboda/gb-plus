@@ -265,7 +265,7 @@
         ///
         /// A test that *wrote* them would be writing exactly the fabricated
         /// digest this protocol refuses, so they are produced by the same
-        /// canonical functions the launcher checks against — over live
+        /// canonical functions the launcher checks against, over live
         /// identities and a locally assembled program.
         fn seal_committed_digests(request: &mut AuthenticatedContainmentRequest) {
             let scopes = request
@@ -363,8 +363,8 @@
         ///
         /// The inert fixture `kill(getpid(), SIGSTOP)`s itself unconditionally,
         /// which is the whole contract of `InertInternalTest`. A
-        /// `ContainedCommand` release must not depend on that — under strategy
-        /// A the controller never sends `CONT` for this kind — so a
+        /// `ContainedCommand` release must not depend on that, under strategy
+        /// A the controller never sends `CONT` for this kind, so a
         /// contained-command test needs a target that behaves like a real
         /// command: start, run, exit.
         fn non_cooperating_static_target(root: &std::path::Path) -> PathBuf {
@@ -500,26 +500,11 @@
             );
         }
 
-        /// Item E, live: both kernel-control layers are installed by the
-        /// launcher and the sealed image still executes.
-        ///
-        /// Four things are observed at once, and each one needs the other
-        /// three to mean anything:
-        ///
-        /// * `restrict_self` reported `FullyEnforced` **and** `no_new_privs` —
-        ///   otherwise `install_release_containment` refuses and the release
-        ///   never reaches the image replacement;
-        /// * the committed denial witness `/` answered `EACCES` **after**
-        ///   restriction, so the ruleset is a policy rather than a formality;
-        /// * `seccompiler::apply_filter` accepted a program this launcher
-        ///   assembled itself and required to digest to the plan's
-        ///   `program_sha256`;
-        /// * and the target nevertheless executed through
-        ///   `/proc/self/fd/<n>`, read its stdin, and produced its exact
-        ///   output — which is only possible because the **closed compiled**
-        ///   runtime allowlist grants `/proc` and the loader's surfaces. A
-        ///   launcher installing exactly the plan's four data directories
-        ///   would have been refused at its own `execve`.
+        /// Verifies both control layers and a successful target exec together.
+        /// Landlock must report `FullyEnforced` with `no_new_privs`, and the `/` denial
+        /// witness must return `EACCES`. The installed filter must match the committed
+        /// digest. The target must still execute through `/proc/self/fd/<n>` and produce
+        /// its expected output using the fixed runtime read allowlist.
         #[test]
         fn a_contained_command_release_installs_both_layers_and_still_execs_its_sealed_image() {
             let _guard = native_test_guard();
@@ -612,7 +597,7 @@
         /// the descriptor behind one scope is replaced by a second, equally
         /// real directory. The ruleset the controller recomposes from live
         /// `fstat` identities is then not the ruleset the plan committed, and
-        /// the release stops at the controller — the helper is never told
+        /// the release stops at the controller, the helper is never told
         /// anything, so nothing is half-installed.
         #[test]
         fn a_substituted_containment_scope_is_refused_before_any_layer_is_installed() {
@@ -706,8 +691,8 @@
             );
         }
 
-        /// D-0010: the release lands while the runner is non-dumpable.
-        /// Descriptors travel over `SCM_RIGHTS`, not `/proc/<pid>/fd`.
+        /// Release must work with a non-dumpable runner. Descriptors are transferred
+        /// through `SCM_RIGHTS` because the child cannot reopen the parent's procfs FDs.
         #[test]
         fn sealed_release_survives_the_non_dumpable_runner_profile() {
             let _guard = native_test_guard();
@@ -777,17 +762,9 @@
             assert_eq!(failure.certainty, HeldExecCertainty::ExecFailedBeforeTarget);
         }
 
-        /// D-0009's regression proof: a sealed image the kernel refuses must
-        /// not put *any* interpreter into the target's context.
-        ///
-        /// The old `execvp` release absorbed the kernel's `ENOEXEC` and ran
-        /// `/bin/sh` with the target's identity, cgroup, working directory,
-        /// and stdio already installed, which is why the shell's complaint
-        /// landed on the target's stderr. Three independent observations pin
-        /// that shut: the controller sees the exact pre-target certainty, the
-        /// failure carries the kernel's own `ENOEXEC` from `execve` rather
-        /// than a shell's exit, and both target output streams are still
-        /// byte-empty.
+        /// An invalid sealed image must return the kernel's `ENOEXEC` without starting
+        /// a shell. Require pre-target certainty and empty output streams to catch an
+        /// `execvp`-style interpreter fallback.
         #[test]
         fn non_executable_sealed_image_runs_no_interpreter_in_the_target_context() {
             let _guard = native_test_guard();
@@ -802,10 +779,7 @@
                 .release_inert_target(&staged.procfs, staged.expectation, request)
                 .unwrap_err();
 
-            // Ordered so the discriminating observation reports first: on the
-            // pre-D-0009 release this assertion caught the interpreter itself,
-            // failing with `target.stderr carried /bin/sh: 0: cannot open
-            // /proc/self/fd/4: No such file`.
+            // Check output first so an unexpected interpreter is reported directly.
             for stream in ["target.stdout", "target.stderr"] {
                 let bytes = fs::read(staged.root.path.join(stream)).unwrap();
                 assert!(

@@ -1,6 +1,7 @@
 import importlib.util
 import io
 from pathlib import Path
+import struct
 import tarfile
 import tempfile
 import unittest
@@ -13,6 +14,37 @@ spec.loader.exec_module(payload)
 
 
 class PayloadTests(unittest.TestCase):
+    def test_owner_metadata_is_rejected_in_central_or_local_headers(self):
+        owner_metadata = struct.pack("<HHIIHH", 0x5855, 12, 0, 0, 501, 20)
+
+        class LocalMetadata(zipfile.ZipInfo):
+            def FileHeader(self, zip64=None):
+                self.extra = owner_metadata
+                header = super().FileHeader(zip64)
+                self.extra = b""
+                return header
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            app = root / "GB Plus.app"
+            relative = "Contents/MacOS/grok-build-tauri"
+            executable = app / relative
+            executable.parent.mkdir(parents=True)
+            executable.write_bytes(b"public app fixture")
+            archive = root / "app.zip"
+            with patch.object(payload, "expected_files", return_value={relative}):
+                for local_only in (False, True):
+                    with self.subTest(local_only=local_only):
+                        entry = (LocalMetadata if local_only else zipfile.ZipInfo)("GB Plus.app/" + relative)
+                        if not local_only:
+                            entry.extra = owner_metadata
+                        with zipfile.ZipFile(archive, "w") as bundle:
+                            bundle.writestr(entry, executable.read_bytes())
+                        with zipfile.ZipFile(archive) as bundle:
+                            self.assertEqual(bool(bundle.infolist()[0].extra), not local_only)
+                        with self.assertRaisesRegex(ValueError, "extra metadata"):
+                            payload.audit_app(app, archive)
+
     def test_build_paths_test_records_and_credentials_refuse(self):
         for data in (b"/Users/release-tester/build/main.rs", b"/Volumes/Private Disk/project/lib.rs",
                      b"worktree-proof.txt", b"xai-" + b"A" * 64,

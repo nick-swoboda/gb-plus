@@ -477,15 +477,9 @@
         fs::read(leaf.join(name)).unwrap_or_else(|error| panic!("read {name}: {error}"))
     }
 
-    /// Owns every process placed inside a live domain.
-    ///
-    /// The occupants are three *unrelated* direct children of this process.
-    /// Each moved itself into the domain and then `exec`ed, so none is an
-    /// ancestor of another and no orphaned grandchild can be left behind for
-    /// some other reaper. Nothing links the three but the cgroup, which is
-    /// exactly the property ADR-0006 requires of an accounting domain and
-    /// denies to a process group: no single group or session signal could
-    /// reach this set.
+    /// Owns three unrelated children that self-attach to one cgroup and exec.
+    /// The cgroup is their only shared accounting domain, so a single process-group
+    /// or session signal cannot terminate the set. All remain directly reapable.
     #[cfg(target_os = "linux")]
     struct Occupants(Option<Vec<std::process::Child>>);
 
@@ -705,8 +699,8 @@
     }
 
     /// Control: an externally destroyed leaf must not be mistaken for a reaped
-    /// one. Exactly one input differs from the enforced arm — the leaf is gone
-    /// before cleanup runs — and an empty read there proves nothing.
+    /// one. Exactly one input differs from the enforced arm, the leaf is gone
+    /// before cleanup runs, and an empty read there proves nothing.
     #[cfg(target_os = "linux")]
     #[test]
     fn live_cleanup_refuses_a_leaf_that_vanished_instead_of_reporting_zero_survivors() {

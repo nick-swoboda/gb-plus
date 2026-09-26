@@ -743,7 +743,7 @@
                     // produces, so the fixture computes it the way the probe
                     // controller does. The version-3 fixture carried
                     // `Digest::sha256(b"test-only-complete-…")`, which the
-                    // version-3 validator admitted and this one refuses —
+                    // version-3 validator admitted and this one refuses,
                     // `an_invented_kernel_control_probe_result_is_refused`
                     // is that refusal.
                     active_probe_result_digest: landlock_bootstrap_probe_result_digest(

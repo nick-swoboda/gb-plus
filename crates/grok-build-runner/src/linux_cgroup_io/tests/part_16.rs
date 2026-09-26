@@ -1,8 +1,8 @@
     // Increment 1 of the "a command can run contained" path.
     //
     // These drive the production containment and target mints into the real
-    // journaled release — `plan_held_release`, `prepare_held_release`,
-    // `commit_held_release` on `LinuxCgroupIo` — against a genuine delegated
+    // journaled release, `plan_held_release`, `prepare_held_release`,
+    // `commit_held_release` on `LinuxCgroupIo`, against a genuine delegated
     // cgroup-v2 leaf, and let a real static ELF execute under the plan's own
     // Landlock ruleset and seccomp filter.
     //
@@ -281,7 +281,7 @@
     /// Control arm: the same release with one scope descriptor substituted for
     /// another equally real one this service holds.
     ///
-    /// Nothing else changes — same plan, same digests, same target, same leaf.
+    /// Nothing else changes, same plan, same digests, same target, same leaf.
     /// The controller recomposes the ruleset from the descriptors it was handed
     /// and finds it is not the ruleset the plan committed, so the release is
     /// refused before the helper is told anything.
@@ -392,7 +392,7 @@
             .expect("the plan's own binary seals against its own digest");
         drop(sealed);
 
-        // Control: one input varied — a digest of the same bytes plus one.
+        // Control: one input varied, a digest of the same bytes plus one.
         let mut bytes = fs::read(&inputs.target).expect("read the static target");
         bytes.push(0);
         let foreign = Digest::sha256(&bytes);

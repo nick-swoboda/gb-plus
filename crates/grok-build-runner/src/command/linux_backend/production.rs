@@ -183,7 +183,7 @@ impl LinuxCgroupV2Backend {
     /// What lands in `service_proven` is the intersection of two sets: the
     /// controls the episode **durably journaled as proven**, and the
     /// controls the production command path actually installs. Both halves
-    /// are required — a canary result about a leaf no command runs in is
+    /// are required, a canary result about a leaf no command runs in is
     /// not a statement about what confines a command.
     ///
     /// # Errors
@@ -225,15 +225,9 @@ impl LinuxCgroupV2Backend {
     }
 }
 
-/// Measurements of the canary ordering, against a real delegated subtree.
-///
-/// These exist to answer one question with evidence rather than argument:
-/// **can a live canary suite prove controls in the command's own leaf,
-/// while that command's domain is prepared and holding the delegation
-/// lock?** ADR-0014's finding 1 recorded that it cannot, giving three
-/// independently sufficient journal invariants. That finding refutes a
-/// particular *implementation* -- a throwaway second domain, and a canary
-/// that releases -- and the suite's actual interface does neither.
+/// Measures canaries inside the command's own prepared cgroup while the
+/// service holds the delegation lock. The suite neither creates a second
+/// domain nor consumes the command's release.
 #[cfg(all(test, target_os = "linux"))]
 mod command_leaf_canary_measurement {
     use super::*;
@@ -324,9 +318,7 @@ mod command_leaf_canary_measurement {
             .leaf_identity()
             .expect("the prepared leaf has a kernel identity");
 
-        // Proof the lock really is held right now: a second acquisition is
-        // refused. This is the invariant ADR-0014 named, observed rather
-        // than assumed.
+        // A second acquisition must fail while this section owns the lock.
         assert!(
             backend.acquire_delegation_lock().is_err(),
             "the prepared domain must be holding the delegation lock"
@@ -542,7 +534,7 @@ impl ContainedReleaseRequestMint {
     ///
     /// When the service state root or the grant's workspace cannot be opened,
     /// when the retained directories cannot be created, or when this host
-    /// implements no Landlock ABI — which is reported rather than skipped,
+    /// implements no Landlock ABI, which is reported rather than skipped,
     /// because a host that creates no ruleset is one where no plan could commit
     /// one either.
     pub(crate) fn create(
@@ -878,29 +870,15 @@ impl LinuxCgroupV2Backend {
 }
 
 impl LinuxCgroupV2Backend {
-    /// Prepares this command's domain and proves controls **inside its own
-    /// leaf**, retaining the domain for `launch`.
-    ///
-    /// This is the ordering ADR-0014's finding 1 recorded as inadmissible.
-    /// That finding refuted a different arrangement -- a throwaway second
-    /// domain, and a canary that releases -- and neither happens here:
-    ///
-    /// * the suite is handed the delegation descriptor this locked section
-    ///   already owns, so it never acquires the lock a second time;
-    /// * exactly one `prepare_service_domain` call happens per command, so
-    ///   there is no second effect for `require_fresh_episode` to refuse;
-    /// * `run_in_adopted_leaf` has no path to a release, so the command's
-    ///   one release is untouched and still belongs to the command.
-    ///
-    /// The ceilings are reinstalled afterwards because the suite drives its
-    /// descendant A/B by writing its own, and the command must run under the
-    /// journal's committed values rather than the last ones a canary wrote.
+    /// Prepares the command's domain and runs canaries in that same leaf.
+    /// The suite borrows the held delegation, creates no second domain and
+    /// cannot release the command. Restore and read back the journal's resource
+    /// ceilings afterwards because the canaries temporarily change them.
     ///
     /// # Errors
     ///
-    /// When no service handoff is held, when the domain cannot be prepared,
-    /// when the suite cannot run, or when the committed ceilings cannot be
-    /// reinstalled and read back exactly.
+    /// Fails when the handoff is absent, preparation or canaries fail, or the
+    /// committed ceilings cannot be restored and verified.
     pub(crate) fn prove_controls_on_command_leaf(
         &mut self,
         command: &PreparedContainedCommand,
@@ -1019,36 +997,16 @@ impl LinuxCgroupV2Backend {
         ))
     }
 }
-/// Composes this command's backend onto an **installed** Linux native service.
-///
-/// Returns `Ok(None)` -- not an error -- when this runner was never told where a
-/// service is installed, or when the desktop never sent it a launch
-/// preparation. Both are ordinary: the caller then composes the in-process
-/// backend. Neither is guessed around, because a runner that invented an
-/// install root or a launch identity would be authorizing itself.
-///
-/// Every input comes from something the command already carries:
-///
-/// | input | source |
-/// |---|---|
-/// | install root | the caller-supplied [`SupervisorPaths`] |
-/// | workspace root | the grant's own canonical root |
-/// | target | the prepared command's retained executable path |
-/// | authority | the prepared command's v11 execution projection |
-/// | launch identity | the v15 preparation, re-anchored to live state |
-/// | command directory | this command's launch digest |
-///
-/// The command's private directory name is derived from the launch digest
-/// rather than allocated, so the same command names the same leaf and a second
-/// composition for a different command cannot collide with it.
+/// Composes the command onto an installed Linux service.
+/// Returns `Ok(None)` when install paths or launch preparation are absent,
+/// allowing the caller's in-process route. Inputs come from the command's grant,
+/// retained target, execution authority and launch preparation; the launch
+/// digest names its private directory.
 ///
 /// # Errors
 ///
-/// Returns [`SupervisorError`] when a required path is not UTF-8, when the
-/// launch identity cannot be minted from the preparation this command arrived
-/// with, when the composition refuses at any of its steps, and when the
-/// resulting handoff was journaled under a different grant or policy than this
-/// backend is composed from.
+/// Returns [`SupervisorError`] for invalid paths or launch identity, composition
+/// failure, or a handoff bound to a different grant or policy.
 #[cfg(target_os = "linux")]
 pub(crate) fn compose_on_installed_service(
     prepared: &PreparedContainedCommand,

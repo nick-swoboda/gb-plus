@@ -2018,7 +2018,7 @@ mod tests {
     fn current_and_frozen_plan_bytes_have_separate_canonical_goldens() {
         let current = current_plan();
         let legacy = legacy_plan(&current);
-        // These goldens use ADR-0012 typed attestation identities.
+        // Golden values retain the typed attestation identity.
         assert_eq!(
             current.plan_digest(),
             &Digest::parse("904796d4acd7b5549fc3ca05523a0ec3194fbb05ecf1ccc55ed4bdc816d3aff2")

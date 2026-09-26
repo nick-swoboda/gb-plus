@@ -1,39 +1,18 @@
-/// Composes one live installed native service into a service-owned backend for
-/// exactly one contained command.
+/// Composes an installed native service into one contained-command backend.
 ///
-/// This is steps 3 through 11 of the installed-service route, run in
-/// production, in the order the ownership rules require:
+/// Authenticate the handoff, derive its state-root capability, observe anchored
+/// facts and consume the capability into journal authority. Create retained
+/// command directories, authenticate binaries and controls, then mint the plan.
+/// Bootstrap and journal binding precede admission and backend creation.
 ///
-/// 1. Open the installed handoff. This is where the anchor stops being a claim:
-///    every absolute name it commits to is re-walked and re-`statx`'d, and a
-///    committed name that resolves to a different object refuses here.
-/// 2. Derive the single state-root capability.
-/// 3. Observe the anchored plan facts *through* that capability, before it is
-///    consumed.
-/// 4. Consume the capability into the one journal authority it can ever mint.
-/// 5. Create this command's retained directories under the authority's own
-///    state-root descriptor -- never a reopened ambient path.
-/// 6. Authenticate Bubblewrap, mint the two mandatory kernel-control artefacts
-///    against this running kernel, measure the target, and seal a setup channel.
-/// 7. Mint the twelve-component plan.
-/// 8. Bootstrap (borrowing the authority), journal the plan (consuming it), and
-///    bind the two.
-/// 9. Admit, select launch images, open the setup authority, and open the
-///    service-owned backend.
-///
-/// The `expected` journal binding handed to `into_state_root_capability` is the
-/// commitment the handoff already authenticated. That comparison is therefore
-/// not where the installation is proven -- step 1 is. What it does prove is
-/// that this composition is deriving a capability for the same service the
-/// anchor was authenticated against, and the plan minted at step 7 must in turn
-/// carry that identical binding or the bootstrap and the journal both refuse.
+/// The journal, bootstrap and plan must share the handoff's authenticated
+/// service binding. Retained capabilities keep filesystem operations bound to
+/// that service.
 ///
 /// # Errors
 ///
-/// Returns [`CgroupIoFailure`] at whichever step refuses. No step is skipped
-/// and no refusal is downgraded: a host with no Landlock, no Bubblewrap, a
-/// runner-owned install root, or a delegation this runner does not own produces
-/// no backend rather than a weaker one.
+/// Returns [`CgroupIoFailure`] at the first failed step. Missing controls or
+/// invalid ownership never produce a reduced-control backend.
 #[cfg(target_os = "linux")]
 #[allow(
     clippy::too_many_lines,

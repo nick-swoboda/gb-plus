@@ -420,10 +420,8 @@ impl RunnerCommandRequestV13 {
                         "V13 worker task differs from its exact current graph member",
                     ));
                 }
-                // ADR-0009 stage 8 has not yet minted the exact core repair
-                // activation authority. Failing closed here prevents a dormant
-                // reserve node from becoming executable through an invented
-                // runner-local permit.
+                // Repair activation has no admitted core authority. Refuse rather than
+                // mint a runner-local permit for a dormant reserve node.
                 if task.purpose != TaskPurposeV2::Ordinary {
                     return Err(invalid(
                         "V13 repair-slot commands require the future exact core-minted activation authority",

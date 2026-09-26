@@ -522,7 +522,7 @@
     /// The control half of the test above: a bare program name never reaches a
     /// containment backend at all.
     ///
-    /// Same fixture, same limits, one input varied — the command's program —
+    /// Same fixture, same limits, one input varied, the command's program,
     /// and the two stops are different gates, not two wordings of one gate.
     /// `resolve_executable` refuses a bare name before any backend is composed,
     /// so its messages name a `PATH` and **no** control, while the absolute
@@ -531,8 +531,8 @@
     ///
     /// Both bare-name refusals are pinned because which one fires depends on
     /// the compiled policy, not on the command: a policy that declares no
-    /// environment — which is exactly what the walking skeleton's spine
-    /// compiles — has no controlled `PATH` to search, and the fixture policy
+    /// environment, which is exactly what the walking skeleton's spine
+    /// compiles, has no controlled `PATH` to search, and the fixture policy
     /// that declares `PATH=/usr/bin:/bin` searches it and finds nothing. Both
     /// are `SupervisorError::InvalidCommand`, which
     /// `contained_command_failure_code` maps to `InvalidAuthority` rather than

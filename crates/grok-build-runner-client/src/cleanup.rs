@@ -659,7 +659,7 @@ pub(super) fn launch_cleanup_admission_matches(
 /// This is the proven post-completion-rollback pattern applied to the ordinary
 /// path: the authenticated retained image is executed through the platform's
 /// descriptor-exec bridge and the child's own standard streams are the entire
-/// transport. Nothing here is a substitute for containment — a direct child
+/// transport. Nothing here is a substitute for containment, a direct child
 /// creates no native accounting domain, so it returns no native cleanup
 /// custody, and the durable admission plus its platform binding remain the
 /// complete cleanup authority. The exact expected binding is echoed on every
@@ -1134,15 +1134,9 @@ pub(super) fn ordinary_cleanup_backend(
     }
 }
 
-/// Admits the ordinary launch only where the cleanup backend is defined *and*
-/// the kernel will execute the retained, authenticated runner file description.
-///
-/// The ordinary worker is a direct child of this desktop process, started the
-/// same way the post-completion rollback applier already starts, so the
-/// descriptor-exec bridge is the whole launch binding. Linux executes the
-/// sealed anonymous image through its authenticated `/proc/self/fd/N` magic
-/// link. macOS has no such bridge — measured, not assumed, in ADR-0011 — so
-/// every macOS launch refuses here and carries that measurement as its reason.
+/// Admits launch only when cleanup and authenticated descriptor-exec are
+/// available. Linux executes the sealed runner through `/proc/self/fd/N`.
+/// macOS has no admitted bridge for this route and refuses before launch.
 pub(super) fn ensure_native_ordinary_platform_launch_binding_available(
     role: RunnerRole,
 ) -> Result<(), RunnerClientError> {

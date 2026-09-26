@@ -4,7 +4,7 @@
     // file varies one kernel answer at a time and requires a named refusal, and
     // the live half in `linux_cgroup_io::tests` creates real directories and
     // reads them with real syscalls. Nothing here performs I/O, which is the
-    // point — the crossing and collapse refusals stay provable on a host with
+    // point, the crossing and collapse refusals stay provable on a host with
     // no Linux kernel in front of them.
 
     /// `overlayfs`, measured with `stat -f` inside `gbd-linux:1.97.0`, which is
@@ -636,7 +636,7 @@
         }
 
         // One empty directory serves every project view, so the digests are
-        // equal by construction — and that is a measurement of one inode, not
+        // equal by construction, and that is a measurement of one inode, not
         // a constant: another command's mask digests differently.
         let destinations = BTreeSet::from(["/run/grok/live", "/work"]);
         let masks = directories

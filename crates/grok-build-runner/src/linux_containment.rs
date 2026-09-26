@@ -630,58 +630,19 @@ impl LinuxNativeLaunchIdentity {
         Ok(identity)
     }
 
-    /// Builds this runner's own launch identity from the preparation the
-    /// desktop sent it, joined to state the runner already holds.
+    /// Derives launch identity from the received preparation and the runner's
+    /// live session, effect context, grant hash and policy hash.
     ///
-    /// [`Self::try_from_claim`] cannot be used inside a runner: it needs a
-    /// `PlatformLaunchBinding`, whose only constructors require a
-    /// `PersistedRunnerLaunchCleanupAdmission` -- a ledger readback aggregate
-    /// that derives no `serde` and is deliberately not a wire type. Putting it
-    /// on the wire would spend that boundary; so the binding's contribution is
-    /// re-anchored instead.
-    ///
-    /// **What the binding used to supply, and where each value now comes from:**
-    ///
-    /// | value | previously | now |
-    /// |---|---|---|
-    /// | `session_id` | `binding.session_id()` | this runner's own session |
-    /// | `input_snapshot` | `binding.cleanup_intent()` | the effect context |
-    /// | `grant_hash` | `binding.grant_hash()` | this runner's own grant |
-    /// | `policy_hash` | `binding.policy_hash()` | this runner's own policy |
-    ///
-    /// The hashes are taken as digests rather than as a grant and a policy so
-    /// this module stays free of those types, and so the caller is visibly the
-    /// one supplying its *live* values.
-    ///
-    /// The last three are **stronger** re-anchored than they were: previously
-    /// they were copied out of a binding, and now they are taken from the state
-    /// this runner is actually executing under, so an identity cannot describe a
-    /// grant or policy other than the live one.
-    ///
-    /// **Cross-checks kept, with their counterparts:** the contract version;
-    /// `sprint_id` and `launch_id` against the effect context this preparation
-    /// arrived with; and `expected_platform_binding_digest` against the digest
-    /// the wire already required to equal a fresh SHA-256 of the binding's own
-    /// canonical bytes -- which ties the attempt to real bytes rather than to a
-    /// second copy of a claim.
-    ///
-    /// **Two checks have no counterpart here and are not silently dropped.**
-    /// `attempt.cleanup_effect_id == binding.cleanup_effect_id()` and
-    /// `attempt.claimed_at_unix_ms >= binding.cleanup_admitted_at_unix_ms()`
-    /// both compare the attempt against the *binding*, and there is no cleanup
-    /// effect id or cleanup admission timestamp anywhere in the runner's state
-    /// to compare against. What stands in their place is not another equality
-    /// but the v15 transport commitment: the whole preparation is inside the
-    /// digest the desktop computed over the frame, so an attempt altered in
-    /// transit -- including in those two fields -- fails the frame before this
-    /// function is reached. That is a different guarantee from the one it
-    /// replaces, and it is recorded here rather than assumed equivalent.
+    /// The desktop's non-serializable `PlatformLaunchBinding` cannot cross this
+    /// boundary. Contract version, sprint, launch and binding digest are checked
+    /// against the received request. The runner has no independent cleanup-effect
+    /// ID or admission timestamp to compare; those fields are protected by the
+    /// v15 frame commitment, not by a local ledger readback.
     ///
     /// # Errors
     ///
-    /// When the attempt does not validate, its contract version is not current,
-    /// or its sprint, launch, or binding digest differs from the request it
-    /// arrived with.
+    /// Fails for an invalid attempt or a mismatched contract version, sprint,
+    /// launch or binding digest.
     pub(crate) fn try_from_wire_preparation(
         attempt: &RunnerLaunchPreparationAttempt,
         expected_binding_digest: &Digest,
@@ -3179,7 +3140,7 @@ pub(crate) fn cleanup_domain<H: CgroupIo>(
 ///
 /// This is the one nonblocking emptiness question a live domain may ask, and
 /// the answer is a `cgroup.events` read performed through the retained
-/// delegation lock and the exact leaf identity — never a directory listing and
+/// delegation lock and the exact leaf identity, never a directory listing and
 /// never a cached value. It retains no evidence and can therefore never stand
 /// in for the reaping proof: `cleanup_domain` still has to establish the
 /// canonical `populated 0` plus two empty `cgroup.procs` endpoint before any

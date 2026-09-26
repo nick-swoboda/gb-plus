@@ -257,9 +257,9 @@ fn drive_durable_probe<E: DurableProbeEffects>(
 
 /// Drives one canary episode to its endpoint and returns what it established.
 ///
-/// This is the same durable machine the delegation probe uses — same journal,
+/// This is the same durable machine the delegation probe uses, same journal,
 /// same bounded generation ceiling, same create/observe/configure/kill/
-/// prove-empty/remove lifecycle, same private directory — differing only in
+/// prove-empty/remove lifecycle, same private directory, differing only in
 /// that `effects` declares [`ProbeEpisodeKind::ControlCanary`] and runs a live
 /// suite inside the configured leaf.
 ///
@@ -275,7 +275,7 @@ fn drive_durable_probe<E: DurableProbeEffects>(
 /// # Errors
 ///
 /// Fails for every reason [`drive_durable_probe`] fails, and when the episode
-/// reached its endpoint without a durable claim — a canary that proved
+/// reached its endpoint without a durable claim, a canary that proved
 /// nothing is a refusal here, never an empty success.
 fn drive_canary_episode<E: DurableProbeEffects>(
     journal: &mut CanonicalCgroupJournalStore,
@@ -1530,7 +1530,7 @@ impl LinuxProductionPlanAnchoredFactsV1 {
     /// `LinuxProductionCommandPlanInputsV1` portable: this type is
     /// `cfg(target_os = "linux")`, so a mint that took it directly could not be
     /// proved on a host with no Linux kernel in front of it. Every field is a
-    /// borrow — nothing is re-derived here, so the mint cannot see a value the
+    /// borrow, nothing is re-derived here, so the mint cannot see a value the
     /// anchor did not already require to equal the installer's commitment.
     pub(crate) fn plan_anchored_facts(&self) -> LinuxAnchoredServiceFactsV1<'_> {
         LinuxAnchoredServiceFactsV1 {
@@ -2377,7 +2377,7 @@ fn create_retained_child_directory(
 ///
 /// `fchmod` itself is unavailable here: `cap-std` opens directories with
 /// `O_PATH`, and `fchmod` on an `O_PATH` descriptor answers `EBADF`. That was
-/// measured, not assumed — `cap-primitives` performs the same `chmod` through
+/// measured, not assumed, `cap-primitives` performs the same `chmod` through
 /// `/proc/self/fd`, which is what this call reaches.
 #[cfg(target_os = "linux")]
 fn chmod_held_directory(
@@ -2433,8 +2433,8 @@ fn observe_directory_kernel_facts(
 ///
 /// # Errors
 ///
-/// Returns [`CgroupIoFailure`] when any read fails — an error is never read as
-/// an absence — when the identity changed across the walk, or when the
+/// Returns [`CgroupIoFailure`] when any read fails, an error is never read as
+/// an absence, when the identity changed across the walk, or when the
 /// enumeration is not a well-formed complete walk.
 #[cfg(target_os = "linux")]
 fn observe_empty_git_mask_directory(

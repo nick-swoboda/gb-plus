@@ -262,34 +262,15 @@ impl ShadowWorkspace {
         Ok(shadow)
     }
 
-    /// Names the fixed private shadow that the **worker runner** will create,
-    /// without creating anything.
-    ///
-    /// Under the runner wire protocol the `Worker` role owns shadow creation:
-    /// initialization binds only "the fixed private-state root and optional
-    /// fixed shadow root", a worker "may capture the granted live root, create
-    /// one fixed private shadow", and `WorkerCreateShadow` materializes it from
-    /// the worker's own descriptor-relative live capture, which must equal the
-    /// initialized base snapshot first. The runner therefore refuses to
-    /// initialize a `Worker` whose fixed shadow root already exists. The trusted
-    /// desktop still owns the *name*, so this constructor performs every safety
-    /// check [`Self::create`] performs before it would touch the filesystem —
-    /// grant integrity, base/grant agreement, live-workspace currency, absolute
-    /// destination, an absent destination, a real canonical parent, and
-    /// disjointness from the granted workspace — and then performs no
-    /// filesystem mutation at all.
-    ///
-    /// The returned handle observes a directory that does not exist yet. Every
-    /// observation (`root`, [`Self::stage_changes`]) therefore fails until the
-    /// worker has created it, which is exactly the fail-closed behavior the
-    /// desktop needs before it can prove the worker created its own shadow.
+    /// Names a private shadow for the worker to create, without mutating storage.
+    /// Apply the same pre-mutation checks as [`Self::create`]. The worker must
+    /// capture the initialized base before materializing the shadow. Observations
+    /// through this handle fail until that creation completes.
     ///
     /// # Errors
     ///
-    /// Returns an error if the grant is invalid, the base does not belong to the
-    /// grant, the live workspace is stale, the destination is relative, already
-    /// exists, has no safe canonical parent, or lies inside the granted
-    /// workspace.
+    /// Fails for an invalid grant, mismatched or stale base, relative or existing
+    /// destination, unsafe parent, or overlap with the granted workspace.
     pub fn worker_created_destination(
         grant: &IssuedWorkspaceGrant,
         base: &WorkspaceManifest,
@@ -1288,9 +1269,8 @@ mod tests {
         ));
     }
 
-    /// D-0007: the worker runner, not the desktop, materializes the fixed
-    /// private shadow, so naming one must create nothing while still applying
-    /// every check `create` applies before it would touch the filesystem.
+    /// Naming a worker-owned shadow creates nothing, while applying the same
+    /// pre-mutation checks as `create`.
     #[test]
     fn worker_created_shadow_destination_names_without_creating_and_keeps_every_create_check() {
         let workspace = TestDirectory::new("shadow-named");

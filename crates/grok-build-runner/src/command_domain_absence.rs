@@ -1,29 +1,12 @@
-//! Kernel-read evidence that no command domain exists for one refused effect.
+//! Kernel observations of command-domain absence at refusal time.
 //!
-//! A containment refusal is a claim about something that did *not* happen, and
-//! the repository's law is that such a claim is worth only what was read back.
-//! This module therefore never records a decision the runner made; it records
-//! what the kernel answered when the runner asked, at the instant of refusal,
-//! three independent questions:
+//! Read the visible cgroup-v2 subtree for command leaves, every thread's
+//! `children` list for live children, and `/proc/self/stat` for reaped-child
+//! fault/CPU accounting. No field is inferred from the runner's own decision.
 //!
-//! 1. does the cgroup-v2 subtree this runner can see contain any command-domain
-//!    leaf (`gb-` followed by exactly 64 lowercase hex characters)?
-//! 2. does this process have any live child, as the kernel's own
-//!    `/proc/self/task/<tid>/children` lists it?
-//! 3. has this process ever reaped a child, as the kernel's own child-fault and
-//!    child-CPU accounting in `/proc/self/stat` records it?
-//!
-//! Every field below is the answer to one of those reads. None of them is a
-//! constant the runner also wrote, and none is derived from a decision taken in
-//! this process: an absence observation that could be produced without asking
-//! the kernel would prove nothing, which is exactly the failure mode the
-//! `kill_value` write-constant finding named.
-//!
-//! The observation is deliberately fail-closed and *optional*. If any read is
-//! unavailable, any bound is reached, or any answer is not the absence answer,
-//! no observation is produced at all and the refusal keeps its historical
-//! evidence-free shape. Producing a weaker record instead would reintroduce
-//! precisely the trust this module exists to remove.
+//! Evidence is optional and fails closed: an unavailable read, exhausted bound
+//! or non-absence answer produces no observation. Such a refusal retains its
+//! evidence-free form.
 
 use std::fmt::{self, Display, Formatter};
 

@@ -767,7 +767,7 @@ pub(crate) struct LinuxRoleSnapshotBindingV1 {
 /// The service parent and the delegation root are installed state: they exist
 /// before any plan and are anchored by the installer commitment, so the plan
 /// names them. The **leaf does not exist when the plan is minted**, and
-/// schema version 2 stopped pretending otherwise — see
+/// schema version 2 stopped pretending otherwise, see
 /// [`LinuxCommandDomainLeafPlanV1`].
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -2445,7 +2445,7 @@ impl ValidatedLinuxProductionCommandPlanV1 {
 
     /// The mode a rebound test plan gives the service cgroup **parent**.
     ///
-    /// Traversable by the service, writable only by the delegator — which is
+    /// Traversable by the service, writable only by the delegator, which is
     /// what `/sys/fs/cgroup/<parent>` is on every host this project installs
     /// on, and what `validate_cgroup` requires.
     #[cfg(test)]
@@ -2756,8 +2756,8 @@ struct LinuxProductionCommandPlanSchemaVersionV1 {
 
 /// The refusal a record from another schema version meets.
 ///
-/// The version-3 message named neither operand — it said only that the schema
-/// version "differs" — so a restart against a persisted older record reported
+/// The version-3 message named neither operand, it said only that the schema
+/// version "differs", so a restart against a persisted older record reported
 /// a mismatch without saying from what to what. A refusal an operator cannot
 /// diagnose is only half a refusal.
 fn schema_version_refusal(observed: u32) -> LinuxProductionCommandPlanError {
@@ -3103,7 +3103,7 @@ fn validate_cgroup(
         ));
     }
     // The delegated subtree is the service's. A delegation owned by anyone
-    // else — the delegator included — is not a delegation to this service.
+    // else, the delegator included, is not a delegation to this service.
     if delegation.owner_uid != service_identity.owner_uid {
         return Err(invalid(
             "the delegated cgroup is not owned by the service identity that owns the state root",
@@ -3377,7 +3377,7 @@ fn validate_git_masks(
 /// they ever met was `validate_nonzero_digest`, which rejects an all-zero
 /// string and admits every other 64-character value, so for two subsystems
 /// that do not exist the fields could carry nothing but invention. Checking
-/// them harder was not available — there was no artefact to compare against —
+/// them harder was not available, there was no artefact to compare against,
 /// so the fields went instead. What is left is real: an ABI window that is a
 /// compiled constant and that a live `observed_kernel_abi` is measured against
 /// at bootstrap, and two enforcement contracts.
@@ -3407,8 +3407,8 @@ fn validate_mandatory_kernel_controls(
 ///
 /// It is a **separate** function on purpose.
 /// `validate_mandatory_kernel_controls` is byte-identical to the version-3
-/// build — the ABI window, both enforcement contracts and the `KillProcess`
-/// matched action are still required exactly as they were — and every
+/// build, the ABI window, both enforcement contracts and the `KillProcess`
+/// matched action are still required exactly as they were, and every
 /// requirement here is an addition to it. Nothing below can make a plan that
 /// version 3 refused acceptable: a version-3 plan has no artefact at all and is
 /// refused before this runs, by the schema-version clause.
@@ -4114,8 +4114,8 @@ pub(crate) struct LinuxLandlockDenialWitnessV1 {
 /// Schema version 3 could not carry this, and said so: it had no ruleset to
 /// digest, so every digest-shaped field it had removed was necessarily
 /// invented. Version 4 carries it because there is now a mint that *creates*
-/// the ruleset — `landlock_create_ruleset` for the handled set, one
-/// `path_beneath` per scope over a real descriptor — and digests the
+/// the ruleset, `landlock_create_ruleset` for the handled set, one
+/// `path_beneath` per scope over a real descriptor, and digests the
 /// specification the kernel accepted. Nothing here is a value this module
 /// chose: `handled_access_bits` is the access set the kernel admitted at
 /// `created_at_kernel_abi`, and every scope identity is a `statx` answer.
@@ -4286,7 +4286,7 @@ pub(crate) struct LinuxSeccompNamespaceDenialV1 {
 /// every measurement resting on them stays valid.
 ///
 /// The kernel evaluates every installed filter and keeps the highest-precedence
-/// action, so stacking cannot weaken the network layer — measured, not assumed.
+/// action, so stacking cannot weaken the network layer, measured, not assumed.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct LinuxSeccompNamespaceFilterV1 {
@@ -4426,7 +4426,7 @@ impl LinuxLandlockPlanV1 {
 /// a forbidden-syscall probe digest with no filter to digest. Version 3 removed
 /// them. Version 4 carries a filter because one is compiled: `program_sha256`
 /// is the digest of the assembled BPF instructions, and the audit architecture
-/// is still *not* a constant — `validate_architecture` requires it to agree with
+/// is still *not* a constant, `validate_architecture` requires it to agree with
 /// every other architecture-bearing field of the plan, all of which are derived
 /// from live measurements, and now also with the architecture the filter's own
 /// syscall numbers were taken from.
@@ -4916,58 +4916,17 @@ impl ValidatedLinuxProductionCommandPlanV1 {
 // The admitted Bubblewrap image
 // ---------------------------------------------------------------------------
 
-/// The exact Bubblewrap image this project admits, by immutable source
-/// identity.
+/// Pinned Bubblewrap package and executable identity.
 ///
-/// `LinuxBinaryIdentitiesV1::bubblewrap` is not an `Option`, so every complete
-/// Linux command plan names a real `bwrap` file. That makes "which `bwrap`" a
-/// supply-chain question rather than a deployment detail, and this constant is
-/// the answer a reviewed commit gave.
+/// [`BUBBLEWRAP_ACQUISITION_SCRIPT`] verifies Canonical's signing fingerprint,
+/// `InRelease`, package index and archive digest. [`Self::version`] comes from the
+/// archive's control metadata and must match the signed index; acquisition never
+/// executes the downloaded binary.
 ///
-/// **It is a pin, not a discovery.** Nothing here searches a `PATH` and nothing
-/// accepts whatever happens to be installed: a production mint reads the file
-/// at [`Self::resolved_path`], hashes its whole content, and requires the digest
-/// to equal [`Self::sha256`]. A host carrying a different `bwrap` — newer,
-/// older, patched, or a distribution's own build — is refused rather than
-/// admitted, which is the same stance
-/// [`crate::macos_vz_guest`]'s `GUEST_IMAGE_PIN_V1` takes towards the kernel.
-///
-/// **Where the values come from.** All of them are read out of the verified
-/// acquisition chain in [`BUBBLEWRAP_ACQUISITION_SCRIPT`], which is the chain
-/// the guest kernel already travels: Canonical's pinned archive-signing
-/// fingerprint, `gpgv` on the suite's `InRelease`, the index digest taken out of
-/// that signed text, and this archive's `Filename`/`Size`/`SHA256` taken out of
-/// that index. Bubblewrap is the **third package** on that chain and changes no
-/// link of it.
-///
-/// **The version is a file fact.** [`Self::version`] is the `Version:` field of
-/// the archive's own `control` member, cross-checked against the same field in
-/// the signed index. It is deliberately not the output of `bwrap --version`:
-/// executing a freshly downloaded binary to learn what it is would put the
-/// answer outside the signature chain, and the package version additionally
-/// identifies the exact build rather than only the upstream release.
-///
-/// **The self-report is a second, different fact about the same bytes.**
-/// [`Self::self_reported_version`] is what this exact image prints when it is
-/// asked `--version`. It is not a substitute for [`Self::version`] and does not
-/// weaken it: a package version and an upstream release line are different
-/// strings by construction, and this admission commits both rather than
-/// pretending one answers for the other. Committing it is no weaker than
-/// committing [`Self::sha256`], because it is a **property of the pinned
-/// bytes** — the same file whose whole content is already pinned. What the
-/// admission refused was *learning* the version by execution; recording what
-/// the verified image says, and then requiring the running image to say the
-/// same, is the opposite of that. It is a liveness binding: the digest proves
-/// the bytes on disk are the admitted ones, and the probe proves the thing that
-/// executed is that thing.
-///
-/// **Where it is verified.** Not in [`BUBBLEWRAP_ACQUISITION_SCRIPT`], on
-/// purpose: that step must not execute what it just downloaded, which is the
-/// whole reason [`Self::version`] is read out of the `control` member. It is
-/// verified against the already-verified image instead, by
-/// `linux_cgroup_io`'s live probe test, which authenticates
-/// `/usr/bin/bwrap` against [`Self::sha256`] *before* executing it through the
-/// retained descriptor and requires the resulting stdout to equal this string.
+/// Runtime admission hashes [`Self::resolved_path`] and requires [`Self::sha256`].
+/// The live probe then executes the verified retained image and checks
+/// [`Self::self_reported_version`]. This separately binds runtime liveness to the
+/// pinned bytes; it does not replace the package-version check.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct AdmittedBubblewrapImageV1 {
     /// Binary package name, exactly as the signed index spells it.
@@ -5187,7 +5146,7 @@ impl AuthenticatedBubblewrapImageV1 {
 /// the memfd it was handed.
 ///
 /// **Framing.** Line-feed-terminated ASCII lines. Line 0 is this descriptor
-/// verbatim, which is why it may not itself contain a line feed — asserted by
+/// verbatim, which is why it may not itself contain a line feed, asserted by
 /// `the_setup_channel_protocol_descriptor_is_one_ascii_line`. Every other line
 /// is `key=value` except the four object lines, which are colon-separated
 /// fields, and the terminating `end`.
@@ -5218,7 +5177,7 @@ const LINUX_SETUP_CHANNEL_STATEMENT_FORMAT_V1: u32 = 1;
 
 /// Plan-internal role name for the sealed setup channel.
 ///
-/// It is a role, not a path — a memfd has no name a plan could use.
+/// It is a role, not a path, a memfd has no name a plan could use.
 /// `validate_binaries` requires it to be distinct from the Bubblewrap image,
 /// the inner launcher and the target.
 pub(crate) const SETUP_CHANNEL_OBJECT_ID: &str = "setup-channel";
@@ -5305,8 +5264,8 @@ impl LinuxSetupChannelStatementV1<'_> {
     /// the sealed readback to equal it byte for byte, so there is one source of
     /// truth rather than a written copy that can drift from what it describes.
     ///
-    /// The encoding is total and deterministic — no map iteration order, no
-    /// clock, no locale, no floating point — which is what makes re-derivation
+    /// The encoding is total and deterministic, no map iteration order, no
+    /// clock, no locale, no floating point, which is what makes re-derivation
     /// by an independent reader possible at all.
     ///
     /// # Errors
@@ -5416,8 +5375,8 @@ impl LinuxSetupChannelStatementV1<'_> {
 /// of the bytes in front of it, then required to equal what is committed.**
 ///
 /// The caller supplies three independent answers about one sealed memfd it
-/// already holds — a `statx`/`fstat` observation, the live `F_GET_SEALS` answer,
-/// and a complete readback — plus the [`LinuxSetupChannelStatementV1`] that
+/// already holds, a `statx`/`fstat` observation, the live `F_GET_SEALS` answer,
+/// and a complete readback, plus the [`LinuxSetupChannelStatementV1`] that
 /// should be in it. Every one of them has to agree. In particular the readback
 /// must equal a fresh encoding of the statement byte for byte, so a channel is
 /// never a digest of whatever happened to be in a descriptor: it is a digest of
@@ -5553,7 +5512,7 @@ impl AuthenticatedSetupChannelV1 {
 /// Bytes in the ELF64 file header.
 ///
 /// The whole header is read because `e_phoff`, `e_phentsize` and `e_phnum` live
-/// at 0x20, 0x36 and 0x38 respectively — past the twenty bytes
+/// at 0x20, 0x36 and 0x38 respectively, past the twenty bytes
 /// [`LINUX_ELF_HEADER_PREFIX_BYTES`] covers, which is only enough for
 /// `e_machine`.
 const ELF64_HEADER_BYTES: usize = 64;
@@ -5575,7 +5534,7 @@ const ELF64_PROGRAM_HEADER_COUNT_OFFSET: usize = 0x38;
 /// The only `e_phentsize` an ELF64 program header table may carry.
 ///
 /// A table with any other stride is one this walk cannot index, and an image
-/// carrying one is refused rather than walked at the wrong pitch — a wrong
+/// carrying one is refused rather than walked at the wrong pitch, a wrong
 /// stride would read `p_type` out of the middle of a neighbouring field and
 /// could report zero `PT_INTERP` for an image that has one.
 const ELF64_PROGRAM_HEADER_ENTRY_BYTES: u16 = 56;
@@ -5616,7 +5575,7 @@ const MAX_LINUX_TARGET_PROGRAM_HEADERS: u16 = 256;
 /// The prover never opens anything. It reads at explicit offsets from something
 /// the caller already has, which is what lets the production path read the
 /// **held descriptor** `RetainedExecutable` keeps open across
-/// `prepare_v12` — the same descriptor the launch would use — rather than
+/// `prepare_v12`, the same descriptor the launch would use, rather than
 /// reopening a path that may by then resolve somewhere else.
 ///
 /// Every read is exact: a source that cannot supply the requested bytes reports
@@ -5783,7 +5742,7 @@ impl LinuxMeasuredTargetImageV1 {
             )));
         }
 
-        // Measured out of the bytes, then compared — the same stance the
+        // Measured out of the bytes, then compared, the same stance the
         // Bubblewrap mint takes towards `e_machine`.
         let elf_machine = read_le_u16(&header, ELF64_MACHINE_OFFSET)
             .ok_or_else(|| unreachable_elf_field(subject, "e_machine"))?;
@@ -5875,7 +5834,7 @@ impl LinuxProgramImageV1 {
     /// [`LinuxBinaryIdentitiesV1`].
     ///
     /// `requested_program` must be the exact program the command effect
-    /// authority asked for — `validate_binaries` requires equality with it and
+    /// authority asked for, `validate_binaries` requires equality with it and
     /// does not accept a resolution alongside it. `executable` must be the
     /// authenticated readback of the descriptor `measured` was measured
     /// through; the two are required to agree about length here, so a plan
@@ -6028,7 +5987,7 @@ impl LinuxProgramHeaderTableExtentV1 {
 ///
 /// It returns `None` rather than zero deliberately. A helper that defaulted a
 /// short read to zero would report `PT_NULL` for a header it could not reach,
-/// and `PT_NULL` is neither `PT_INTERP` nor `PT_DYNAMIC` — a truncated table
+/// and `PT_NULL` is neither `PT_INTERP` nor `PT_DYNAMIC`, a truncated table
 /// would then measure as statically linked. Every caller turns `None` into a
 /// refusal.
 fn read_le_u16(bytes: &[u8], offset: usize) -> Option<u16> {
@@ -6112,7 +6071,7 @@ pub(crate) const LINUX_PER_COMMAND_PRIVATE_DIRECTORY_MODE: u32 = 0o700;
 ///
 /// `0o500` rather than `0o700`: the mask must stay empty, and an owner that
 /// cannot write to it cannot fill it by accident. This is a barrier, not a
-/// proof — the owner may `fchmod` it back — and the record says so. What proves
+/// proof, the owner may `fchmod` it back, and the record says so. What proves
 /// emptiness is the observation below.
 pub(crate) const LINUX_GIT_MASK_DIRECTORY_MODE: u32 = 0o500;
 
@@ -6204,7 +6163,7 @@ fn encode_retained_object_line(object: &LinuxRetainedObjectIdentityV1) -> String
 /// Every field is a kernel answer about a descriptor the observer already
 /// holds: `statx` for the object, `fstatfs` for the magic, and a complete
 /// `getdents64` loop for the names. Nothing here may be chosen, and there is
-/// deliberately no "assume empty on read error" arm anywhere — an errored or
+/// deliberately no "assume empty on read error" arm anywhere, an errored or
 /// short enumeration never reaches this type.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct LinuxGitMaskEmptyDirectoryObservationV1 {
@@ -6219,8 +6178,8 @@ impl LinuxGitMaskEmptyDirectoryObservationV1 {
     /// This is the *only* producer of `.git`-mask observation content, for the
     /// reason `LinuxSetupChannelStatementV1::encode` is the only producer of
     /// setup-channel content: one source of truth cannot drift from a written
-    /// copy of itself. The encoding is total and deterministic — no map
-    /// iteration order, no clock, no locale — which is what makes independent
+    /// copy of itself. The encoding is total and deterministic, no map
+    /// iteration order, no clock, no locale, which is what makes independent
     /// re-derivation possible at all.
     ///
     /// The identity is not a parameter the caller may vary freely: `retained`
@@ -6370,7 +6329,7 @@ impl LinuxGitMaskV1 {
     /// bound into the same bytes. That is what stops the field being a
     /// constant: two commands' masks are two different inodes and therefore two
     /// different digests, and the same directory with one entry in it digests
-    /// differently again — and is refused before it can.
+    /// differently again, and is refused before it can.
     ///
     /// # Errors
     ///
@@ -6494,35 +6453,16 @@ pub(crate) struct LinuxPerCommandRetainedDirectoriesV1 {
 }
 
 impl LinuxPerCommandRetainedDirectoriesV1 {
-    /// Mints the six retained identities from live kernel observations.
-    ///
-    /// Every requirement below is a **comparison** between a kernel answer and
-    /// either a compiled constant or another kernel answer. Nothing is
-    /// assigned:
-    ///
-    /// - each identity passes the same `validate` a decoded plan's object table
-    ///   applies, through [`LinuxRetainedObjectIdentityV1::from_kernel_observation`];
-    /// - the four private directories carry exactly
-    ///   [`LINUX_PER_COMMAND_PRIVATE_DIRECTORY_MODE`] and the mask exactly
-    ///   [`LINUX_GIT_MASK_DIRECTORY_MODE`], so a mode a failed `fchmod` left
-    ///   behind is a refusal;
-    /// - every one of the six is owned by `owner_uid`, the identity the
-    ///   installer anchor committed the service to;
-    /// - the five service-created directories share the per-command root's
-    ///   device **and unique mount identity**, so something mounted over one of
-    ///   them between creation and observation is a refusal;
-    /// - the per-command root's link count is exactly
-    ///   [`PER_COMMAND_ROOT_LINK_COUNT`] and the three empty children's is
-    ///   exactly [`EMPTY_DIRECTORY_LINK_COUNT`], so the kernel's own count
-    ///   states that the root holds these four subdirectories and no others and
-    ///   that the children hold none;
-    /// - no two of the six collapse onto one device and inode.
+    /// Mints six retained identities from kernel observations.
+    /// Require valid identities, the committed owner, exact private-directory and
+    /// mask modes, and distinct device/inode pairs. Service-created directories
+    /// must share the per-command root's device and unique mount identity. Exact
+    /// link counts and empty-directory checks reject unexpected children.
     ///
     /// # Errors
     ///
-    /// Returns [`LinuxProductionCommandPlanError::Invalid`] on any of the
-    /// above, and on every refusal
-    /// [`LinuxGitMaskEmptyDirectoryObservationV1::require_empty`] makes.
+    /// Returns [`LinuxProductionCommandPlanError::Invalid`] for any mismatch or
+    /// [`LinuxGitMaskEmptyDirectoryObservationV1::require_empty`] failure.
     #[allow(
         clippy::too_many_lines,
         reason = "one linear audit keeps every per-command role, its kernel answer, and the constant it is compared against visible in the order they are checked"
@@ -6870,7 +6810,7 @@ impl LinuxGitMaskMountBindingV1 {
     /// The order is measure, then compare. The committed digest is re-derived
     /// rather than trusted, the clone's identity is required to equal the
     /// directory's field by field, and the mount identity is required to
-    /// *differ* — a caller that handed the same observation twice, having
+    /// *differ*, a caller that handed the same observation twice, having
     /// performed no mount at all, is refused here rather than believed.
     ///
     /// # Errors
@@ -7079,7 +7019,7 @@ pub(crate) const LINUX_LANDLOCK_MAXIMUM_MODELED_KERNEL_ABI: u32 = MAX_LANDLOCK_A
 /// The installer-anchored service facts one production plan is minted against.
 ///
 /// Every field is a live kernel read that was required to equal what the
-/// installer externally committed — the anchored half of component 3, plus the
+/// installer externally committed, the anchored half of component 3, plus the
 /// running service image, plus the measured host architecture. The type exists
 /// so the mint can be *portable*: `LinuxProductionPlanAnchoredFactsV1` is
 /// `cfg(target_os = "linux")` and lives in `linux_cgroup_io`, so a mint that
@@ -7139,12 +7079,9 @@ pub(crate) struct LinuxProductionCommandPlanInputsV1<'facts> {
     pub(crate) mandatory_controls: &'facts LinuxMandatoryControlArtefactsV1,
 }
 
-/// The two mandatory kernel-control artefacts one plan is minted against.
-///
-/// Both halves travel together because item E needs both: `required_controls`
-/// contains `FilesystemPolicy`, which only Landlock installs, and
-/// `NetworkPolicy`, which only the filter installs. A plan carrying one of them
-/// would describe half a containment and could not be used for either.
+/// Mandatory kernel-control artefacts for a complete plan.
+/// Landlock supplies `FilesystemPolicy`; the filter supplies `NetworkPolicy`.
+/// Both must be present.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct LinuxMandatoryControlArtefactsV1 {
@@ -7154,26 +7091,16 @@ pub(crate) struct LinuxMandatoryControlArtefactsV1 {
 }
 
 impl LinuxProductionCommandPlanInputsV1<'_> {
-    /// Joins the twelve components and submits the result to the plan's own
-    /// validators.
-    ///
-    /// This is the function `LinuxProductionCommandPlanComponentsV1` never had.
-    /// It assembles nothing it can measure instead, and it deliberately does
-    /// **not** re-check what a validator already checks: the object table and
-    /// the binary identities are handed over as two independent sets of kernel
-    /// answers and `validate_binaries`, `validate_cgroup`, `validate_mounts`,
-    /// `validate_git_masks`, `validate_architecture` and
-    /// `validate_release_and_evidence` are what cross them. Nothing here is a
-    /// relaxed copy of any of them.
+    /// Joins the twelve measured components and runs the plan's validators.
+    /// Object and binary identities remain independent observations until those
+    /// validators cross-check them.
     ///
     /// # Errors
     ///
-    /// Returns [`LinuxProductionCommandPlanError::Invalid`] when the authority
-    /// carries no effect context, when the role and the compiled mutation mode
-    /// do not name one execution view, when the target's linkage is dynamic
-    /// (deferred item D: there is no loader-closure resolver, so the interpreter
-    /// and runtime-object mounts `validate_mounts` would demand cannot be
-    /// produced), and on every refusal the plan's own validators make.
+    /// Returns [`LinuxProductionCommandPlanError::Invalid`] for missing effect
+    /// authority, inconsistent role or execution view, dynamic target linkage,
+    /// or a plan-validation failure. Dynamic linkage is unavailable because no
+    /// loader-closure resolver supplies the required runtime mounts.
     pub(crate) fn mint(
         self,
         native_launch: LinuxNativeLaunchIdentity,
@@ -7280,8 +7207,8 @@ impl LinuxProductionCommandPlanInputsV1<'_> {
     ///
     /// `canonicalize` sorts it; sorting here as well would only hide a change
     /// to that ordering. The service image appears exactly once even though it
-    /// fills two roles — the anchored platform service and the plan's inner
-    /// launcher — because it is one inode, and `validate_retained_objects`
+    /// fills two roles, the anchored platform service and the plan's inner
+    /// launcher, because it is one inode, and `validate_retained_objects`
     /// refuses two object IDs that alias one.
     fn retained_objects(&self) -> Vec<LinuxRetainedObjectIdentityV1> {
         let mut objects = self.directories.retained_objects();
@@ -7501,7 +7428,7 @@ impl LinuxProcessSurfaceV1 {
 }
 
 impl LinuxLandlockPlanV1 {
-    /// The Landlock contract — an ABI window, an enforcement rule, and the
+    /// The Landlock contract, an ABI window, an enforcement rule, and the
     /// ruleset a mint created.
     ///
     /// See [`LINUX_LANDLOCK_MAXIMUM_MODELED_KERNEL_ABI`] for why the window's
@@ -7605,7 +7532,7 @@ pub(crate) struct LinuxBubblewrapBootstrapBindingV1 {
 /// observed.
 ///
 /// It is a projection of [`LinuxLandlockPlanV1`] and carries what that type
-/// carries — no more. Under schema version 3 that was an ABI window and
+/// carries, no more. Under schema version 3 that was an ABI window and
 /// nothing else, and the doc here said so: a bootstrap could not be handed a
 /// Landlock contract to compare, because the plan it came from had none to
 /// give. Version 4 gives it one, so the bootstrap is now handed the exact

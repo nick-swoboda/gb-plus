@@ -111,7 +111,7 @@
 
         // The clone is a real, new mount rooted at the very directory the mask
         // digested: same inode, same device, same mode, same owner, same link
-        // count — and a unique mount identity the kernel has not used before.
+        // count, and a unique mount identity the kernel has not used before.
         let directory = created.identities().git_mask_observation().clone();
         let clone = cloned.observation().clone();
         assert_eq!(clone.object.inode, directory.object.inode);
@@ -159,8 +159,8 @@
         assert_eq!(attached.destination().object.link_count, 2);
 
         // Enforced, and the sharpest arm: a **second** clone of the very same
-        // directory attached at a second destination. Every field agrees —
-        // same inode, same device, same mode, still empty — and the first
+        // directory attached at a second destination. Every field agrees,
+        // same inode, same device, same mode, still empty, and the first
         // binding still refuses it, because the kernel does not reuse a unique
         // mount identity.
         let second_workspace = fixture.path.join("second-workspace");
@@ -229,7 +229,7 @@
         detach(&fourth_git);
 
         // Control after enforcement: detach, and the project's own `.git` is
-        // back — and the binding refuses that observation, because it is a
+        // back, and the binding refuses that observation, because it is a
         // different directory entirely.
         detach(&live_git);
         assert_eq!(names_at(&live_git), vec!["HEAD", "objects"]);
@@ -286,7 +286,7 @@
 
         // Enforced: a real file appears in the real mask directory *after* the
         // clone. The clone's own root is that same inode, so reading the mount
-        // at its destination refuses — the emptiness proof is not a snapshot
+        // at its destination refuses, the emptiness proof is not a snapshot
         // the mount can outlive.
         let mask_path = fixture
             .state_path()
@@ -302,8 +302,8 @@
             .expect_err("a mount whose root gained an entry must be refused at its destination");
         assert!(format!("{populated:?}").contains("is not empty"), "{populated:?}");
 
-        // The mount was performed — `move_mount` returned before the
-        // destination was read — so the refusal is `Ambiguous` and the
+        // The mount was performed, `move_mount` returned before the
+        // destination was read, so the refusal is `Ambiguous` and the
         // detached content really is at the destination. That is the honest
         // report: the call refuses to say the destination is the empty
         // directory it committed to, and does not pretend nothing happened.

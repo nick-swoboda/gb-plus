@@ -2624,8 +2624,8 @@
         )
         .expect("construct canonical crossed lease");
         let mut crossed_intent = intent;
-        // The crossed intent is internally consistent — its lease-scoped
-        // idempotency key derives from the crossed lease — so the desktop's own
+        // The crossed intent is internally consistent, its lease-scoped
+        // idempotency key derives from the crossed lease, so the desktop's own
         // provider-call validation admits it and the durable claim stays the
         // authority that refuses the substitution.
         crossed_intent.idempotency_key = task_lease_provider_call_effect_key(

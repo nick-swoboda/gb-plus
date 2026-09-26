@@ -637,7 +637,7 @@
     ///
     /// `require_exact_current_descriptor_set` compares against the helper's own
     /// `/proc/self/fd`, so a scope descriptor the controller sent but the
-    /// specification did not describe — or one this code forgot to retain —
+    /// specification did not describe, or one this code forgot to retain,
     /// fails here rather than surviving into the released image.
     fn expected_descriptor_set(
         descriptors: &PreparedDescriptorTable,
@@ -664,7 +664,7 @@
     /// ruleset.
     ///
     /// Each one must be close-on-exec, a directory, and carry exactly the
-    /// `(device, inode)` the committed scope names — the same three proofs
+    /// `(device, inode)` the committed scope names, the same three proofs
     /// `receive_parent_descriptor` and `validate_opened_target_descriptors`
     /// make of the fixed roles. No scope path is resolved: the identity is the
     /// authority, and the path travels only because the plan's committed digest
@@ -721,16 +721,10 @@
         Ok(scopes)
     }
 
-    /// Authenticates one descriptor the controller passed over `SCM_RIGHTS`.
-    ///
-    /// The kernel duplicated the controller's exact open file description into
-    /// this process, so nothing was reopened by name and the controller's
-    /// non-dumpable state never mattered (D-0010). What the helper still owes
-    /// is the same proof the procfs open owed: the received descriptor's
-    /// device and inode must equal the release binding's, and it must be
-    /// close-on-exec so only the descriptors the release installs survive the
-    /// image replacement. Type, access mode, seals, and digest are proved
-    /// immediately afterwards by `validate_opened_target_descriptors`.
+    /// Authenticates a received `SCM_RIGHTS` descriptor against its release
+    /// binding's device and inode, and requires close-on-exec. The following
+    /// `validate_opened_target_descriptors` check verifies type, access, seals and
+    /// digest. No path is reopened.
     fn receive_parent_descriptor(
         file: File,
         expected: ParentDescriptorBinding,
@@ -818,31 +812,14 @@
         Ok(())
     }
 
-    /// Releases the held helper into the sealed target image.
+    /// Replaces the held helper with the sealed target using direct `execve`.
+    /// There is no fork or C-library shell fallback. The release installs argv,
+    /// the replacement environment, retained cwd, stdio and `SIGPIPE`, while
+    /// preserving session, process-group and revalidated cgroup membership.
     ///
-    /// The release replaces *this* process: there is no fork here, and the
-    /// same PID must be observed executing the sealed image afterwards. The
-    /// image replacement itself is [`linux_release_exec`]'s direct `execve`,
-    /// never `execvp`, so no C-library shell fallback can interpose an
-    /// interpreter (D-0009).
-    ///
-    /// Everything the previous `Command::exec` release set up is carried
-    /// across unchanged and in the same order `std` applies it: argv including
-    /// argv0, the exactly replaced environment, the working directory, the
-    /// three target stdio descriptors, the `SIGPIPE` disposition, and — by
-    /// touching neither — the session and process-group membership the helper
-    /// already has. Cgroup membership needs no action to survive an exec and
-    /// is revalidated here immediately before the release; the setup-status
-    /// channel is the close-on-exec duplicate `prepare_target` retained, so a
-    /// successful release closes it and a failed one still carries the exact
-    /// failure back to the controller.
-    ///
-    /// **Item E lives here.** When the release is a contained command, the two
-    /// kernel-control layers are installed immediately before the image
-    /// replacement, by [`install_release_containment`]. Both are defined by the
-    /// kernel to survive `execve(2)`, so applying them here rather than inside
-    /// the target is a boundary the target cannot decline, and there is no fork
-    /// between the two — this process becomes the target.
+    /// The close-on-exec status channel closes on success and reports exact
+    /// failure otherwise. Contained commands install both kernel-control layers
+    /// before exec; those controls survive replacement of this process image.
     fn exec_prepared_target(
         binding: &LauncherBinding,
         pid: u32,
@@ -880,10 +857,8 @@
                 .map(|entry| format!("{}={}", entry.name, entry.value)),
         )
         .map_err(|error| ProtocolFailure::new(format!("encode release process image: {error}")))?;
-        // Item E: both layers go on here, after the last descriptor proof and
-        // before the first `dup2`. A layer that will not install, will not
-        // fully enforce, or does not deny what the plan committed is a refusal
-        // — the helper never reaches the image replacement half-confined.
+        // Install and verify both layers before `dup2` or exec. Any failure stops
+        // the release before the target starts.
         if let Some(containment) = prepared.specification.containment.clone()
             && let Err(refusal) =
                 install_release_containment(&containment, &prepared.landlock_scopes)
@@ -933,39 +908,18 @@
         )))
     }
 
-    /// The authenticated read-and-execute runtime surfaces every contained
-    /// release grants **in addition to** the scopes its plan commits.
+    /// Fixed runtime read-and-execute allowlist, additional to the plan's scopes.
+    /// The protocol cannot add entries. Plan scopes are separately checked against
+    /// its retained directories.
     ///
-    /// This is a **closed compiled allowlist**, and the shape matters as much
-    /// as the contents. An open plan field would let a plan grant itself any
-    /// directory on the host — the shape this project has refused repeatedly —
-    /// so the runtime half is not expressible in the protocol at all: nothing
-    /// in [`ReleaseExecSpec`] names it, the helper reads only this constant,
-    /// and the plan's own scopes are separately required by
-    /// `validate_mandatory_control_artefacts` to be retained directories of the
-    /// same plan. A plan therefore cannot widen this list, and cannot reach it.
+    /// * `/proc` permits exec of the sealed image through `/proc/self/fd/<n>` after
+    ///   Landlock has been applied.
+    /// * `/usr`, `/lib`, `/lib64` and `/etc/ld.so.cache` permit loading the ELF
+    ///   interpreter and shared objects.
+    /// * `/dev/urandom` and `/dev/zero` permit runtime initialization without granting
+    ///   access to other devices.
     ///
-    /// Why each entry is here, rather than "because it is needed":
-    ///
-    /// * `/proc` — **the reason item E owed this list at all.** A contained
-    ///   release `execve`s its sealed memfd image through `/proc/self/fd/<n>`,
-    ///   and the kernel resolves that name *after* `landlock_restrict_self`.
-    ///   The committed v4 ruleset grants the command's four data directories
-    ///   and not `/proc`, so a launcher installing exactly it would be refused
-    ///   at its own exec. The development arm has granted `/proc` for months
-    ///   for precisely this reason (`LINUX_RUNTIME_READ_ROOTS`), and nobody had
-    ///   written down why.
-    /// * `/usr`, `/lib`, `/lib64`, `/etc/ld.so.cache` — the kernel resolves the
-    ///   ELF interpreter and the target's complete shared-object closure after
-    ///   Landlock is applied. A policy that omits them does not confine the
-    ///   target; it prevents it from starting, and a program that never started
-    ///   proves nothing.
-    /// * `/dev/urandom`, `/dev/zero` — opened by libc and by most runtimes
-    ///   before the target's own first instruction. They are named exactly: no
-    ///   directory under `/dev` is granted, so no other device is reachable.
-    ///
-    /// Every entry is read-and-execute only, and an absent entry grants nothing
-    /// rather than being substituted.
+    /// Missing entries grant nothing. No entry permits writes.
     const LINUX_LAUNCHER_RUNTIME_READ_SURFACES: &[&str] = &[
         "/proc",
         "/usr",
@@ -988,20 +942,20 @@
     /// The order is the only one that works and is therefore not a preference:
     ///
     /// 1. the BPF program is assembled from the committed table and its digest
-    ///    is required to equal `program_sha256` — a second, independent
+    ///    is required to equal `program_sha256`, a second, independent
     ///    assembly of the same table the controller already assembled, so the
     ///    two peers agree instruction for instruction without exchanging one;
     /// 2. the Landlock ABI this kernel implements is negotiated and required to
     ///    equal the ABI the ruleset was created at, and the handled access set
     ///    is required to be the complete set that ABI implements;
-    /// 3. the ruleset is created and populated — one `path_beneath` per
+    /// 3. the ruleset is created and populated, one `path_beneath` per
     ///    committed scope over the descriptor the controller passed, then the
     ///    closed compiled runtime surfaces;
     /// 4. `restrict_self`, required to report `FullyEnforced` **and**
     ///    `no_new_privs`, because a partially enforced path policy is exactly
     ///    the silent downgrade this boundary exists to refuse;
     /// 5. the committed denial witness is opened and the kernel is required to
-    ///    answer `EACCES` — a ruleset that grants everything would pass step 4
+    ///    answer `EACCES`, a ruleset that grants everything would pass step 4
     ///    and fail here, which is what makes step 4 mean something;
     /// 6. the filter is applied, last, so the witness probe in step 5 runs
     ///    under the path policy but not under a filter that might have killed
@@ -1151,7 +1105,7 @@
     ///
     /// `EACCES` exactly, because that is the errno Landlock returns for a
     /// denied path and it is deliberately not the `EPERM` the syscall layer
-    /// returns for a network endpoint — the errno names which layer refused.
+    /// returns for a network endpoint, the errno names which layer refused.
     /// A witness that opens is a ruleset that proved nothing, and a witness
     /// that fails some other way is an observation this launcher will not read
     /// as enforcement.
@@ -1178,36 +1132,14 @@
         }
     }
 
-    /// The held launcher's containment release, and the only unsafe code the
-    /// Linux launcher has.
+    /// Direct containment exec using POSIX async-signal-safe operations.
+    /// `execve` returns `ENOEXEC` for an invalid image instead of invoking the
+    /// `execvp` shell fallback. The production gate separately requires a
+    /// little-endian ELF64 executable for the host architecture.
     ///
-    /// D-0009: the release used `std::os::unix::process::CommandExt::exec`,
-    /// which is `execvp(3)`. glibc's `execvp` re-executes the named file
-    /// through `/bin/sh` when the kernel answers `ENOEXEC`, so a sealed image
-    /// of the bytes `not-an-executable` ran a shell inside the target's
-    /// identity, cgroup, working directory, and descriptor set — the shell
-    /// failed only because the executable descriptor is close-on-exec — and
-    /// the successful (shell) exec then made the controller report
-    /// `ReleasedOrUnknown` instead of `ExecFailedBeforeTarget`. `execve(2)`
-    /// offers no such courtesy: the kernel either replaces this process image
-    /// with the sealed executable or returns the error to this caller, so no C
-    /// library can interpose an interpreter. The kernel's own `#!` handling is
-    /// unaffected by that and is not this boundary's to relax: the production
-    /// descriptor-exec gate refuses any image that is not a little-endian
-    /// ELF64 executable for this host's machine code before a sealed copy is
-    /// ever created.
-    ///
-    /// The three foreign symbols are POSIX and async-signal-safe, and so is
-    /// `fchdir`. This release does not fork — it replaces the caller's own
-    /// image — so no code here runs in a forked child; keeping the sequence
-    /// async-signal-safe and allocation-free nevertheless keeps that property
-    /// true for any future caller that does fork, and matches the discipline
-    /// the macOS fork-apply-exec surface documents.
-    ///
-    /// `fchdir` on the already-revalidated directory descriptor replaces the
-    /// previous `chdir("/proc/self/fd/N")`: the resulting working directory is
-    /// the same object, named by the retained descriptor instead of by a path
-    /// that has to be resolved again.
+    /// The release replaces this process without forking. `fchdir` uses the
+    /// revalidated directory descriptor, and stdio/SIGPIPE setup remains
+    /// allocation-free.
     #[cfg(target_os = "linux")]
     #[allow(unsafe_code)]
     mod linux_release_exec {
@@ -1382,7 +1314,7 @@
         /// Both halves matter to the callers. The release uses it to place the
         /// target's stdio. The service child-launch closure uses it to put the
         /// descriptor the plan names at fd 0, which **replaces** the transport
-        /// socket the child could not otherwise be rid of — safe Rust cannot
+        /// socket the child could not otherwise be rid of, safe Rust cannot
         /// close a descriptor it does not own, and this does not close one, it
         /// overwrites it. `FD_CLOEXEC` being cleared is exactly what the plan
         /// requires of fds 0..=2, and is why this cannot serve fds 3..=6.
@@ -1420,9 +1352,9 @@
         /// filter is a BPF program the controller compiled. What crosses the
         /// fork is a descriptor and a byte vector.
         ///
-        /// The forked child therefore performs exactly three syscalls —
+        /// The forked child therefore performs exactly three syscalls,
         /// `prctl(PR_SET_NO_NEW_PRIVS)`, `landlock_restrict_self(2)`, and
-        /// `seccomp(SECCOMP_SET_MODE_FILTER)` — and allocates nothing. Both
+        /// `seccomp(SECCOMP_SET_MODE_FILTER)`, and allocates nothing. Both
         /// layers are defined by the kernel to survive `execve(2)`, which is
         /// what makes applying them here, rather than inside the target,
         /// the boundary the target cannot decline.
@@ -1519,7 +1451,7 @@
                     }
                     // Installed after the network filter and never merged into
                     // it: the two carry different matched actions. Order is not
-                    // a precedence decision — the kernel evaluates every
+                    // a precedence decision, the kernel evaluates every
                     // installed filter and keeps the highest-precedence answer
                     // regardless of install order.
                     if !namespace_filter.is_empty() {
@@ -1619,19 +1551,10 @@
         Ok(())
     }
 
-    /// Proves the helper's control descriptor can be received from, never sent
-    /// on.
-    ///
-    /// The control channel is an `AF_UNIX` `SOCK_STREAM` socketpair, because
-    /// `SCM_RIGHTS` is the only way a non-dumpable controller can hand its
-    /// already-open sealed descriptors to its own child (D-0010). A socketpair
-    /// end has no read-only access mode, so the one-way property the old
-    /// `O_RDONLY` pipe carried is re-established by the controller shutting
-    /// down its receive direction; the kernel mirrors that as `SEND_SHUTDOWN`
-    /// here. A zero-length send is the non-destructive probe for it: it must
-    /// fail `EPIPE`, and any acceptance means this is not the sealed control
-    /// channel. `SO_PEERCRED` additionally proves the socketpair was created
-    /// by the authenticated parent process rather than substituted.
+    /// Verifies that the helper's control socket accepts reads but rejects sends.
+    /// The controller shuts down its receive direction, and the helper must observe
+    /// `EPIPE` on a zero-length send. `SO_PEERCRED` also binds the socketpair to the
+    /// authenticated parent. `SCM_RIGHTS` remains usable with a non-dumpable parent.
     fn require_receive_only_control_socket<Fd: AsFd>(
         control: Fd,
         expected_parent_pid: u32,
@@ -1747,33 +1670,15 @@
             .map_err(|error| ProtocolFailure::new(format!("read helper control: {error}")))
     }
 
-    /// Reads one control frame the way the parent reads one status frame.
+    /// Receives a bounded control frame and its `SCM_RIGHTS` descriptors.
+    /// Use nonblocking `recvmsg` with bounded polling, retry `EAGAIN`, refuse
+    /// `POLLERR`, report closure as `UnexpectedEof`, and reject oversized frames,
+    /// trailing bytes and truncated ancillary data.
     ///
-    /// `set_helper_control_nonblocking` puts `O_NONBLOCK` on this descriptor,
-    /// exactly as the parent puts it on both of its own ends, so the read has
-    /// to wait for readiness rather than assume it: this is
-    /// `read_frame_with_timeout` seen from the other side of the same channel
-    /// — one bounded `poll`, `EAGAIN` retried, `POLLERR` refused, a closed
-    /// channel typed `UnexpectedEof`, the frame bounded by
-    /// `MAX_CONTROL_FRAME_BYTES`, and bytes after the terminator refused as
-    /// `InvalidData`.
-    ///
-    /// The one thing only this side experiences is the hold. The parent
-    /// SIGSTOPs the helper, and the wall clock keeps running while it is
-    /// stopped, so the deadline is consulted only after a `poll` that found
-    /// nothing rather than before every `poll`. The parent writes each whole
-    /// atomic frame *before* it signals CONT, so a helper resumed in protocol
-    /// always finds its frame already queued and reads it however long the hold
-    /// lasted, while a helper resumed out of protocol still fails at exactly
-    /// the parent's own bound.
-    ///
-    /// The read is `recvmsg` rather than `read` so the frame's `SCM_RIGHTS`
-    /// descriptors arrive with it. Linux attaches ancillary data to the first
-    /// receive that consumes any byte of the sending `sendmsg`, so the
-    /// descriptors are collected across the whole bounded loop and their count
-    /// is enforced by the caller for that exact sequence number. A truncated
-    /// control message is refused outright: it would mean descriptors the
-    /// kernel closed rather than delivered.
+    /// Consult the deadline only after a poll finds no input. The parent queues
+    /// each atomic frame before resuming the helper, so a valid frame remains
+    /// readable after a long SIGSTOP hold. Collect descriptors across receives;
+    /// the caller checks their count for the exact sequence number.
     fn read_control_frame_with_timeout(
         timeout: Duration,
     ) -> Result<(Vec<u8>, Vec<OwnedFd>), io::Error> {

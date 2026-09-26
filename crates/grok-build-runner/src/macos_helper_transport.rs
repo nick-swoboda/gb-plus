@@ -1,32 +1,14 @@
-//! Client side of the signed macOS dedicated-identity helper transport.
+//! Authenticated client for the macOS dedicated-identity helper.
 //!
-//! This module carries the existing `macos_helper_protocol` messages over a
-//! UNIX domain socket and
-//! authenticates the peer on the other end of that socket. It invents no wire
-//! type: every payload is one of the protocol module's canonical JSON values,
-//! bounded by the same 64 KiB ceiling, and the launch request is additionally
-//! bound to the caller's expected `seatbelt_profile_digest` before a byte
-//! leaves the process.
+//! Carries canonical `macos_helper_protocol` JSON over a UNIX socket with a
+//! 64 KiB bound and binds launch requests to the expected Seatbelt digest.
+//! The kernel's peer audit token identifies a `SecCode` for requirement checks;
+//! path-based signature output is not peer authentication.
 //!
-//! Peer authentication is real rather than advisory. The kernel supplies the
-//! peer's audit token through `getsockopt(SOL_LOCAL, LOCAL_PEERTOKEN)`; the
-//! Security framework resolves that token to a `SecCode` and evaluates a
-//! *configurable* code requirement against it. No pathname is trusted, so the
-//! swap-and-restore race that makes path-based `codesign` output unusable as
-//! evidence does not apply here.
-//!
-//! What this module deliberately does **not** do: it does not install,
-//! register, or start a helper; it does not implement `SMAppService`; and it
-//! grants no execution authority by itself.
-//!
-//! A peer that satisfies an install-time code-directory-hash pin is an
-//! admissible production peer: the runtime property the containment model needs
-//! is local code identity, not Apple publisher attestation. This module
-//! therefore supplies both halves of that property — the kernel audit-token
-//! requirement check, and [`audit_installed_binary`], which reads the installed
-//! helper's ownership and permissions through the filesystem. A peer whose
-//! signature happens to chain to an Apple anchor may additionally claim
-//! publisher attestation; a peer that claims it without the chain is refused.
+//! Runtime admission requires local code identity and an independently audited
+//! install path. Optional Apple publisher attestation is verified when claimed.
+//! This module neither installs nor starts helpers and grants no execution
+//! authority by itself.
 
 #![allow(dead_code)] // Consumed by the macOS backend once the helper binary exists.
 
@@ -364,11 +346,8 @@ pub(crate) enum MacosHelperTransportError {
     HelperRequirementDigestMismatch,
     /// The session named a helper binary the authenticated peer is not.
     HelperBinaryDigestMismatch,
-    /// The session claimed publisher attestation the peer cannot substantiate.
-    ///
-    /// Under ADR-0012 publisher attestation is optional at runtime, so this is
-    /// no longer the default refusal — it fires only when a helper asserts an
-    /// Apple-anchored chain the kernel-resolved `SecCode` does not have.
+    /// The helper claimed an Apple-anchored publisher chain that its
+    /// authenticated `SecCode` does not substantiate.
     UnprovenPublisherClaim {
         /// Whether the peer's signature actually chains to an Apple anchor.
         peer_apple_anchored: bool,
@@ -708,13 +687,8 @@ impl MacosAuthenticatedPeer {
         self.observed.apple_anchored()
     }
 
-    /// Whether this peer can substantiate a publisher-attestation claim.
-    ///
-    /// An ad-hoc code-directory pin authenticates exact bytes but proves no
-    /// publisher, so it never satisfies this. Under ADR-0012 that is not a
-    /// refusal: local code identity is the runtime predicate, and this probe
-    /// only decides which of the two attestation kinds a session may honestly
-    /// claim.
+    /// Checks optional publisher attestation. An ad-hoc `cdhash` pin can satisfy
+    /// local identity admission, but cannot establish a publisher chain.
     pub(crate) const fn publisher_attested(&self) -> bool {
         self.observed.apple_anchored()
     }
@@ -1020,26 +994,14 @@ impl MacosHelperTransportClient {
         &self.requirement
     }
 
-    /// Receives and validates the helper's session record.
-    ///
-    /// Four checks run before the protocol's own validation, in order: the
-    /// helper may not claim publisher attestation the authenticated peer cannot
-    /// substantiate; the session's helper requirement digest must be the one
-    /// this client is pinned to; the session's helper binary digest must be the
-    /// authenticated peer's code identity; and the install audit the session
-    /// publishes must equal the one the caller independently performed on the
-    /// helper binary. Only then does `MacosHelperSession::validate` run, which
-    /// applies the ADR-0012 admission predicate.
-    ///
-    /// The caller's own `observed_install_audit` is the authority for the
-    /// fourth check. A helper cannot talk its way past an install path that
-    /// admits an untrusted writer, because the value compared is the one this
-    /// process read from the filesystem.
+    /// Validates a helper session against the authenticated peer and local audit.
+    /// Check publisher claims, requirement digest, binary identity and the caller's
+    /// independent install audit before applying protocol validation.
     ///
     /// # Errors
     ///
-    /// Fails for a framing error, a non-canonical payload, any of the four
-    /// binding checks, or the protocol's own session validation.
+    /// Fails for invalid framing, non-canonical payloads, mismatched bindings or
+    /// session-validation errors.
     pub(crate) fn receive_session(
         &mut self,
         observed_install_audit: &MacosHelperInstallAudit,

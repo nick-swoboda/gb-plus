@@ -361,7 +361,7 @@
     /// committed.
     ///
     /// Nothing here is copied from the request except the plan's own
-    /// non-measurable fields — the object identifiers, the resolved paths, the
+    /// non-measurable fields, the object identifiers, the resolved paths, the
     /// access bits, the syscall table, the ABI and the architecture. Every
     /// measurable field is re-measured: each scope identity is this process's
     /// `fstat` of the descriptor it will pass, and `program_sha256` /
@@ -502,7 +502,7 @@
     /// Assembles the exact BPF program one committed syscall table compiles to.
     ///
     /// The unmatched action is `Allow` and the matched action is
-    /// `KillProcess` — the only matched action a plan may commit, unchanged
+    /// `KillProcess`, the only matched action a plan may commit, unchanged
     /// since schema version 2. Both the controller and the released helper run
     /// this same function over the same table and both require the resulting
     /// digest to equal the plan's `program_sha256`, so the two peers agree
@@ -2138,23 +2138,13 @@
         }
     }
 
-    /// Creates the controller/helper control channel and seals its direction.
+    /// Creates a one-way socketpair that carries sealed descriptors via
+    /// `SCM_RIGHTS`. This works while core-dump suppression blocks the child's
+    /// access to `/proc/<runner>/fd/N`.
     ///
-    /// The channel is a socketpair rather than a pipe because the sequence-2
-    /// prepare frame has to carry the controller's already-open sealed
-    /// descriptors as `SCM_RIGHTS` ancillary data. Core-dump suppression marks
-    /// the runner non-dumpable before any launch (ADR-0008), which closes
-    /// `/proc/<runner>/fd/N` to its own child, so the kernel has to hand the
-    /// descriptors over instead of the helper reopening them (D-0010).
-    ///
-    /// One-way-ness is not lost with the pipe. The controller shuts down its
-    /// own receive direction, which the kernel propagates as `SEND_SHUTDOWN`
-    /// on the helper's end, so the helper's control descriptor can be read and
-    /// never written; the helper proves that with a zero-length send that must
-    /// fail `EPIPE`. The helper-side identity is captured here, before the
-    /// spawn, so the controller can later prove the live child's fd 0 is this
-    /// exact kernel object — a socketpair's two ends carry distinct inodes,
-    /// where a pipe's two ends shared one.
+    /// Shutting down the controller's receive direction prevents helper sends;
+    /// the helper verifies `EPIPE`. Capture the helper endpoint's own inode before
+    /// spawn so fd 0 can be checked against that exact socket.
     fn open_held_launcher_control()
     -> Result<(OwnedFd, OwnedFd, DescriptorIdentity), HeldLauncherFailure> {
         let (control, helper_control) = socketpair(
@@ -2531,14 +2521,9 @@
         queue_atomic_frame_with_descriptors(control, bytes, &[])
     }
 
-    /// Queues one whole control frame, optionally carrying release descriptors.
-    ///
-    /// The descriptors travel as one `SCM_RIGHTS` control message attached to
-    /// the same `sendmsg` as the frame's bytes, so the kernel duplicates the
-    /// controller's exact open file descriptions into the helper. Nothing is
-    /// reopened by name or through procfs, which is what lets core-dump
-    /// suppression stay ahead of every launch (D-0010): a non-dumpable parent
-    /// blocks `/proc/<parent>/fd/N` for its own child, but not `SCM_RIGHTS`.
+    /// Queues a control frame and its release descriptors in one `sendmsg`.
+    /// `SCM_RIGHTS` duplicates the retained open file descriptions without procfs
+    /// access, so transfer works with a non-dumpable controller.
     fn queue_atomic_frame_with_descriptors(
         control: &OwnedFd,
         bytes: &[u8],

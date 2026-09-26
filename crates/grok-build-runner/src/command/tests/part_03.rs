@@ -540,41 +540,11 @@
             }
         }
 
-        // Phase 2 slice 01 target, retargeted at the DEVELOPMENT path.
-        //
-        // It stays ignored because it cannot pass on this host for three
-        // measured reasons, none of which is a missing piece of code:
-        //
-        //   * macOS provides no `fexecve`/`execveat` and `execve("/dev/fd/N")`
-        //     fails with EACCES, so `BackendControl::DescriptorExec` is
-        //     unprovable on the platform. Whether that control is satisfiable
-        //     by any macOS backend at all is the question ADR-0011 puts to a
-        //     human; nothing here presumes its answer.
-        //   * this fixture's policy configures a 64-process ceiling, and the
-        //     only root-free ceiling macOS offers is the Seatbelt profile's
-        //     own refusal of process creation, which expresses exactly 1
-        //     because the profile language has no counted form of
-        //     `process-fork` (measured). `RLIMIT_NPROC` is per-UID, so a
-        //     larger finite ceiling still needs an otherwise-unused local
-        //     execution account, and so does the UID-domain enumeration behind
-        //     `DescendantDomainKill` at that ceiling.
-        //
-        // `ClosedInheritedDescriptors` is no longer among them: the helper now
-        // forks, applies the profile with `sandbox_init` inside the child, and
-        // reads the child's descriptor table at its `execve` boundary.
-        //
-        // Neither is a ceiling of one:
-        // `a_single_process_policy_proves_both_descendant_controls_without_root`
-        // proves both descendant controls on this unprivileged host by running
-        // this same suite with only `max_processes` changed.
-        //
-        // `required_controls` still demands the three above, so
-        // `validate_preflight` correctly refuses. The sibling test below
-        // asserts that exact refusal and the exact set of controls the
-        // development helper does prove, so the development work is covered by
-        // an executing test rather than by this ignored one. Unignoring
-        // requires a signed host with the dedicated accounts installed, which
-        // is blocker B-01.
+        // This fixture needs controls unavailable on an unprivileged macOS host:
+        // a descriptor-exec bridge and a 64-process dedicated execution account.
+        // Seatbelt can prohibit forks for a one-process ceiling, but cannot express
+        // a counted limit. The neighboring tests exercise the resulting preflight
+        // refusal and the controls that the development helper can prove.
         #[cfg(target_os = "macos")]
         #[test]
         #[ignore = "measured on this host: no fexecve on macOS, and this fixture's 64-process ceiling exceeds the only root-free macOS ceiling (a Seatbelt profile refusing process-fork expresses exactly 1), so DescriptorExec, DescendantLimit, and DescendantDomainKill are unprovable"]
@@ -839,28 +809,10 @@
             }
         }
 
-        /// Both descendant controls are provable without root, for a ceiling of one.
-        ///
-        /// B-03 recorded `DescendantLimit` and `DescendantDomainKill` as
-        /// requiring an otherwise-unused local execution account, i.e. root.
-        /// That is true of the *general* ceiling and false of the ceiling this
-        /// test configures. The proof is a comparison, never an assertion:
-        ///
-        /// * the same canary suite runs twice, differing in exactly one input,
-        ///   the compiled policy's `max_processes`;
-        /// * at 64 neither control is claimed, at 1 both are;
-        /// * inside the suite the fork verdict is itself a three-run
-        ///   comparison, so "the profile refuses process creation" is measured
-        ///   rather than read off a profile string; and
-        /// * the domain-kill verdict rests on a real deadline termination whose
-        ///   survivor enumeration came back empty, plus the leader having been
-        ///   its own session leader, which is what makes that enumeration a
-        ///   complete view of the domain instead of a partial one.
-        ///
-        /// Nothing here claims the walking-skeleton command is runnable: a
-        /// `cargo test` needs many processes, so a ceiling of one is not the
-        /// slice target. What it establishes is that the mechanism behind these
-        /// two controls is not uniquely a dedicated UID.
+        /// Compare the same canary suite at process ceilings of 64 and 1. Only the
+        /// one-process policy can prove both descendant controls without a dedicated
+        /// account. Fork denial and an empty survivor enumeration provide the evidence;
+        /// this does not establish support for multi-process build commands.
         #[cfg(target_os = "macos")]
         #[test]
         fn a_single_process_policy_proves_both_descendant_controls_without_root() {
@@ -968,14 +920,9 @@
             );
         }
 
-        /// An unprivileged launch can never mint contained terminal evidence.
-        ///
-        /// ADR-0012 removed the signing obstruction: a locally attested session
-        /// now closes the terminal-evidence chain, proved in `cleanup_proof`'s
-        /// `a_locally_attested_admission_session_closes_the_macos_terminal_evidence_chain`.
-        /// What remains is host authority — the chain still requires an
-        /// assigned local execution account that only root can create — and the
-        /// refusal must name *that*, not a certificate.
+        /// Local code attestation satisfies signing admission, but unprivileged
+        /// execution still lacks the assigned account required for terminal evidence.
+        /// The refusal must identify that missing host authority.
         #[cfg(target_os = "macos")]
         #[test]
         fn a_development_launch_refuses_to_mint_a_cleanup_proof() {

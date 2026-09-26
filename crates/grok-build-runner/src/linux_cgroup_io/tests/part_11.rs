@@ -3,7 +3,7 @@
     // table.
     //
     // Two independent live halves. The first is the setup closure's own
-    // building blocks — the service pipes and the endpoint validator — which
+    // building blocks, the service pipes and the endpoint validator, which
     // need no installed service and therefore run under the ordinary Linux
     // gate. The second is the stopped-child descriptor-table probe, which is
     // the measurement behind this increment's statement that the child-launch
@@ -119,8 +119,8 @@
     ///
     /// The enforced arm places four descriptors at fds 3..=6 over `SCM_RIGHTS`
     /// and reads the child's own `/proc/<pid>/fd` and `/proc/<pid>/fdinfo` while
-    /// it is stopped. The control arm varies exactly one input — the order of
-    /// the same four descriptors in the same placement message — and the same
+    /// it is stopped. The control arm varies exactly one input, the order of
+    /// the same four descriptors in the same placement message, and the same
     /// reads then disagree with the same expectation.
     #[cfg(target_os = "linux")]
     #[test]
@@ -234,8 +234,8 @@
                 "fd {target} arrived over SCM_RIGHTS and must carry close-on-exec"
             );
         }
-        // Clause 2, second half: descriptors delivered by `Stdio` — the only
-        // mechanism that places an exact number without `unsafe` — arrive
+        // Clause 2, second half: descriptors delivered by `Stdio`, the only
+        // mechanism that places an exact number without `unsafe`, arrive
         // **without** close-on-exec. The plan requires exactly that of fds
         // 0..=2, and requires the opposite of 3..=6, so the two halves of the
         // table cannot be delivered by one mechanism.
@@ -248,7 +248,7 @@
         assert_eq!(by_fd(1).identity, expected(&target_stdout));
         assert_eq!(by_fd(2).identity, expected(&target_stderr));
 
-        // Clause 3, the closure: the child's table is exactly fds 0..=6 — and
+        // Clause 3, the closure: the child's table is exactly fds 0..=6, and
         // fd 0 is the placement socket, not the descriptor the plan puts there.
         // A child cannot close it: `OwnedFd::from_raw_fd`,
         // `BorrowedFd::borrow_raw` and `rustix::io::close` are all `unsafe`.

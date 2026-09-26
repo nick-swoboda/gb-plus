@@ -306,8 +306,8 @@ fn host_one_guest(arguments: std::env::ArgsOs) -> Result<VzGuestRunReport, VzGue
 /// and stop it. It cannot execute a guest command, open a host path the plan
 /// did not name, or apply any host policy.
 ///
-/// Objective-C is the only interface Virtualization.framework publishes — the
-/// framework exports no C entry point beyond its error-domain constant — so
+/// Objective-C is the only interface Virtualization.framework publishes, the
+/// framework exports no C entry point beyond its error-domain constant, so
 /// every call here goes through `objc_msgSend` cast to the exact signature of
 /// the selector being sent. That cast is required on arm64, where the variadic
 /// form of `objc_msgSend` is not ABI-compatible with a concrete call.
@@ -847,7 +847,7 @@ mod darwin_virtualization {
         /// reported a failure, [`VzGuestErrorKind::MachineError`] when the
         /// machine entered the framework's error state, and
         /// [`VzGuestErrorKind::BudgetExhausted`] when the guest did not stop
-        /// in time — in which case the guest is stopped anyway, so no run
+        /// in time, in which case the guest is stopped anyway, so no run
         /// leaves a live machine behind.
         pub(crate) fn run_to_stop(self) -> Result<VzGuestRunReport, VzGuestError> {
             START_OUTCOME.store(-1, Ordering::SeqCst);
@@ -1023,7 +1023,7 @@ pub(crate) const GUEST_IMAGE_PIN_V1: [GuestImagePin; 2] = [
 /// nothing about who produced them. The values here are cross-checked against
 /// the `Packages` index of a suite whose `InRelease` carries a good signature
 /// from [`GuestKernelSourcePin::key_fingerprint`], and a disagreement between
-/// the index and this constant is a refusal — so the digest is Canonical's
+/// the index and this constant is a refusal, so the digest is Canonical's
 /// claim that a reviewed commit agreed with, in that order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct PublishedArchivePin {
@@ -1046,7 +1046,7 @@ pub(crate) struct PublishedArchivePin {
 /// **The chain, link by link.** Everything below the first line is verified
 /// rather than trusted:
 ///
-/// 1. `key_fingerprint` — Canonical's published archive-signing identity. This
+/// 1. `key_fingerprint`, Canonical's published archive-signing identity. This
 ///    is the anchor and the only trusted-by-assertion item in the chain; a
 ///    reviewer confirms it out of band against Canonical's own publication of
 ///    it. `key_sha256` pins the exact exported key bytes as well, so a keyring
@@ -1091,7 +1091,7 @@ pub(crate) struct GuestKernelSourcePin {
     /// The archive carrying `vmlinuz`.
     pub(crate) kernel_archive: PublishedArchivePin,
     /// The archive carrying `virtiofs.ko`, which must be the same publisher
-    /// and the same kernel release — PID 1 inserts it with `finit_module`, and
+    /// and the same kernel release, PID 1 inserts it with `finit_module`, and
     /// a vermagic mismatch is a boot that half-works.
     pub(crate) module_archive: PublishedArchivePin,
     /// SHA-256 of the decompressed `virtiofs.ko`, an input to the reproducible
@@ -1488,7 +1488,7 @@ impl fmt::Display for VzGuestUnhealthy {
 ///
 /// The third variant is the important one. A guest that dies mid-command leaves
 /// an effect whose outcome nobody observed, and the only honest report is that
-/// it is unknown — the same shape the runner's existing recovery uses for an
+/// it is unknown, the same shape the runner's existing recovery uses for an
 /// interrupted native child, and the shape the durable model already
 /// reconciles. It is never reported as a failure and never as a terminal.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1564,9 +1564,7 @@ pub(crate) const GUEST_HEARTBEAT_BOUND: Duration = Duration::from_secs(5);
 /// How often the host re-reads the share while waiting for something.
 pub(crate) const GUEST_POLL_INTERVAL: Duration = Duration::from_millis(2);
 
-/// The bound on teardown, after which the escalation gives up rather than
-/// blocking forever. D-0013's lesson: a wait that can hang is strictly worse
-/// than a wait that can refuse.
+/// Teardown deadline. Report a survivor if bounded escalation cannot stop it.
 pub(crate) const GUEST_TEARDOWN_DEADLINE: Duration = Duration::from_secs(30);
 
 impl VzGuestSession {
@@ -1584,7 +1582,7 @@ impl VzGuestSession {
     /// directory or its control directory cannot be created;
     /// [`VzGuestErrorKind::StartRefused`] when the guest-host process cannot be
     /// spawned; and [`VzGuestErrorKind::GuestNeverBecameReady`] when the guest
-    /// does not publish readiness inside [`GUEST_READY_DEADLINE`] — in which
+    /// does not publish readiness inside [`GUEST_READY_DEADLINE`], in which
     /// case the guest-host process is torn down before returning, so a refused
     /// boot leaves no machine.
     pub(crate) fn boot(
@@ -1734,8 +1732,8 @@ impl VzGuestSession {
     /// does to the health gate.
     ///
     /// This exists only for the enforced half of the health probe. It is the
-    /// one input that probe varies, and varying it any other way — unplugging
-    /// the share, hanging the supervisor — would test a different failure.
+    /// one input that probe varies, and varying it any other way, unplugging
+    /// the share, hanging the supervisor, would test a different failure.
     pub(crate) fn kill_guest_host_for_probe(&mut self) {
         let _ignored = self.host.kill();
         let deadline = Instant::now() + Duration::from_secs(5);
@@ -2338,7 +2336,7 @@ fn probe_residue(inputs: &ProbeInputs) -> Result<(), VzGuestError> {
 /// The control half is a healthy guest running the command. The enforced half
 /// is the identical call after the guest-host process has been killed: the only
 /// input that changed is whether the guest is alive. The refusal must be typed,
-/// must name the guest, and must leave no request on the share — nothing ran
+/// must name the guest, and must leave no request on the share, nothing ran
 /// anywhere.
 fn probe_health(inputs: &ProbeInputs) -> Result<(), VzGuestError> {
     let mut session = inputs.boot("health")?;
@@ -2411,14 +2409,9 @@ fn probe_teardown(inputs: &ProbeInputs) -> Result<(), VzGuestError> {
     Ok(())
 }
 
-/// The bounded escalation, exercised rather than asserted.
-///
-/// The control half is an ordinary teardown: the shutdown request reaches the
-/// guest, it powers itself off, nothing escalates. The enforced half removes
-/// the control directory first, so the request cannot be delivered at all —
-/// the one input that changed — and teardown must still finish inside its
-/// bound by escalating to a signal. D-0013's rule is the point: a wait that can
-/// hang is worse than a wait that gives up.
+/// Normal shutdown reaches the guest without escalation. Removing only the
+/// control directory prevents delivery, so teardown must instead signal the
+/// guest and still finish within its deadline.
 fn probe_teardown_escalation(inputs: &ProbeInputs) -> Result<(), VzGuestError> {
     let session = inputs.boot("escalation-control")?;
     let control = session.shutdown()?;
@@ -2451,7 +2444,7 @@ fn probe_teardown_escalation(inputs: &ProbeInputs) -> Result<(), VzGuestError> {
 
 /// Runs the Linux backend's complete canary suite through the product
 /// lifecycle path, so the twelve controls are proven inside a guest this
-/// session booted, verified, and tore down — not inside a hand-driven harness.
+/// session booted, verified, and tore down, not inside a hand-driven harness.
 fn probe_canary_suite(inputs: &ProbeInputs) -> Result<(), VzGuestError> {
     let mut session = inputs.boot("suite")?;
     println!(

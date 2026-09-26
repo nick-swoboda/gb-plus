@@ -1,15 +1,6 @@
-// Guards for the permit gate. Fragment included from `command/tests/mod.rs`.
-//
-// `LinuxCgroupV2Backend::launch` takes a `ValidatedBackendPermit` by value, and
-// the only mint for that type requires `report.controls == required_controls(..)`
-// exactly. So the twelve-control set is what stands between a real terminal and
-// contained-looking evidence for a command that ran under fewer controls.
-//
-// ADR-0014's ordering finding has a regression guard in code. This finding had
-// only prose, and prose cannot fail a build. The danger it guards is specific:
-// the cheapest way to "unblock" a terminal is to delete an element from
-// `required_controls` until the honest set matches. These tests make that
-// deletion fail loudly instead of silently opening the gate.
+// Permit-gate regression tests. `ValidatedBackendPermit` requires the exact
+// twelve-control set before launch. These tests prevent a reduced control
+// set from authorizing execution.
 
 /// The required set is exactly these twelve, and grows to thirteen only for a
 /// finite memory ceiling.
@@ -100,7 +91,7 @@ fn a_control_set_short_of_the_required_one_cannot_satisfy_the_permit_gate() {
 /// `enforced_controls()` is the intersection of two sets: what a live canary
 /// proved, and `LINUX_PRODUCTION_INSTALLED_CONTROLS`. For the whole of this
 /// sequence the second was one element, so the intersection could never reach
-/// twelve however good the canary was — the gate was shut on the installed side.
+/// twelve however good the canary was, the gate was shut on the installed side.
 ///
 /// It is no longer. Every required control now has a named installer on the
 /// command's own path, so the intersection is bounded only by what the canary

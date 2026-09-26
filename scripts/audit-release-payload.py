@@ -7,6 +7,7 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 import stat
+import struct
 import tarfile
 import zipfile
 
@@ -77,6 +78,17 @@ class Audit:
                         raise ValueError("Linux runtime includes local ownership metadata")
 
 
+def verify_zip_metadata(archive, entry):
+    if entry.extra:
+        raise ValueError("ZIP contains extra metadata")
+    archive.fp.seek(entry.header_offset)
+    header = archive.fp.read(30)
+    if len(header) != 30 or header[:4] != b"PK\x03\x04":
+        raise ValueError("Invalid ZIP local header")
+    if struct.unpack_from("<H", header, 28)[0]:
+        raise ValueError("ZIP local header contains extra metadata")
+
+
 def audit_app(app, archive_path=None):
     expected = expected_files()
     expected_dirs = {str(parent) for name in expected for parent in PurePosixPath(name).parents if str(parent) != "."}
@@ -110,9 +122,9 @@ def audit_app(app, archive_path=None):
             for entry in entries:
                 if not entry.filename.startswith("GB Plus.app/") or entry.comment:
                     raise ValueError("unexpected ZIP root or entry comment")
+                verify_zip_metadata(archive, entry)
                 if stat.S_ISLNK(entry.external_attr >> 16):
                     raise ValueError("ZIP contains a symlink")
-                audit.check(entry.filename + ":zip-metadata", entry.extra)
                 if entry.is_dir():
                     name = entry.filename.removeprefix("GB Plus.app/").removesuffix("/")
                     if name not in expected_dirs | {""} or name in observed_dirs or entry.file_size:

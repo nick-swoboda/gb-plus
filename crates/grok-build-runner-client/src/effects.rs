@@ -253,20 +253,10 @@ pub(super) fn decode_worker_provider_call(
     Ok(call)
 }
 
-/// Validates one canonical worker provider tool call against its durable
-/// intent.
-///
-/// This is worker-only: every caller has already established that the request
-/// is a `Worker*` file or command effect, and `validate_effect_request` binds a
-/// `Worker` role to `intent.worker_lease == session.worker_lease` while
-/// requiring `worker_lease.is_none()` for the `FinalVerifier`, `Applier`, and
-/// `LiveStateVerifier` roles. The attempt lease is therefore present on every
-/// admissible call here, and its absence is refused rather than skipped.
-///
-/// The idempotency comparison is the same relation the coordinator's
-/// `validate_provider_call_for_effect` enforces: `intent.idempotency_key` is
-/// the lease-scoped derivation of the provider's raw call key, never the raw
-/// key itself (D-0012).
+/// Validates a worker tool call against its durable intent and attempt lease.
+/// `validate_effect_request` has already bound the worker role and session lease.
+/// The idempotency key must use the same lease-scoped derivation as the
+/// coordinator; a raw provider call key is insufficient.
 pub(super) fn validate_worker_provider_call_context(
     call: &ProviderToolCall,
     intent: &EffectIntent,

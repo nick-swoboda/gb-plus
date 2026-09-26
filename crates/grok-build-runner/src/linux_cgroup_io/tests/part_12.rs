@@ -100,8 +100,8 @@
     /// arm is the **same binary, the same seven kernel objects and the same
     /// reads**, with exactly one call not made: the `dup2` that installs fd 0
     /// over the placement transport. That single difference is the whole
-    /// distance between "the table cannot be the planned table" — which is what
-    /// the previous increment measured — and the table this mint now holds.
+    /// distance between "the table cannot be the planned table", which is what
+    /// the previous increment measured, and the table this mint now holds.
     #[cfg(target_os = "linux")]
     #[test]
     #[allow(

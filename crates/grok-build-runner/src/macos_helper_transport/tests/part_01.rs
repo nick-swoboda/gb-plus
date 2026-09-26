@@ -509,13 +509,8 @@ fn a_session_claiming_publisher_attestation_is_refused_against_an_ad_hoc_peer() 
     );
 }
 
-/// ADR-0012's behavioral inversion, pinned.
-///
-/// This test previously asserted the opposite: that an ad-hoc helper can never
-/// open a production session, which made Phase 2 unreachable on every
-/// build-from-source host. Local code identity is now the runtime predicate, so
-/// the same session is admitted — and the guard against an *unattested* helper
-/// is asserted in the same place so the change cannot be read as a removal.
+/// An ad-hoc helper with verified local code identity can open a production
+/// session. The same test must still refuse an unattested helper.
 #[test]
 fn a_locally_attested_helper_opens_a_production_session_and_an_unattested_one_does_not() {
     let (client_end, mut helper_end) = UnixStream::pair().expect("unix socket pair");

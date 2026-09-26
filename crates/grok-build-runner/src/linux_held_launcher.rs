@@ -34,8 +34,8 @@ const HELD_LAUNCHER_PROTOCOL_VERSION: u32 = 4;
 /// Version 2 bounded a control frame at 2,048 bytes, which the artefact channel
 /// does not fit: a ruleset with its scopes and a filter with its denied-syscall
 /// table are together larger than the whole of version 2's release
-/// specification. The bound is still a hard one — the helper refuses a longer
-/// frame at exactly this number — and the channel is an `AF_UNIX` `SOCK_STREAM`
+/// specification. The bound is still a hard one, the helper refuses a longer
+/// frame at exactly this number, and the channel is an `AF_UNIX` `SOCK_STREAM`
 /// socketpair whose reader already accumulates to the frame terminator, so the
 /// only thing that changes is where the refusal is.
 const MAX_CONTROL_FRAME_BYTES: usize = 8_192;
@@ -209,17 +209,9 @@ impl ParentDescriptorBinding {
     }
 }
 
-/// What the release replaces the held launcher with.
-///
-/// Version 2 had exactly one variant, and `validate_inert_target` pinned it to
-/// five argv elements and three named environment entries — so a user command
-/// was not merely unauthorized, it was **inexpressible**. That is the shape
-/// item E stopped at.
-///
-/// Version 3 adds one variant and one validator, and keeps them apart on
-/// purpose: the inert target installs nothing and must therefore carry **no**
-/// containment artefact, and a contained command must carry one. Neither can
-/// borrow the other's disposition.
+/// Selects the target that replaces the held launcher.
+/// An inert target must carry no containment artefact; a contained command
+/// must carry one. Their validators and release dispositions remain separate.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum ReleaseTargetKind {
@@ -236,7 +228,7 @@ enum ReleaseTargetKind {
 /// `resolved_path` travels for that digest alone. **The helper never opens
 /// it.** A scope is installed only through a descriptor the controller passed
 /// over `SCM_RIGHTS` whose `fstat` identity equals `identity`, so a substituted
-/// directory is refused even when the path string matched — the same property
+/// directory is refused even when the path string matched, the same property
 /// the plan-side mint holds.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -607,8 +599,8 @@ fn push_length_prefixed(preimage: &mut Vec<u8>, field: &[u8]) {
 
 /// Requires one absolute, bounded, single-line path with no `.`/`..` component.
 ///
-/// The helper never resolves these — every scope is installed through a
-/// descriptor — but a path that could not name a real object has no business in
+/// The helper never resolves these, every scope is installed through a
+/// descriptor, but a path that could not name a real object has no business in
 /// a digest the plan and the launcher both compute.
 fn validate_absolute_release_path(field: &'static str, value: &str) -> Result<(), ProtocolFailure> {
     if !value.starts_with('/')
@@ -719,7 +711,7 @@ struct ReleaseExecSpec {
 ///
 /// **The version travels with the bytes.** Version 2 recorded no protocol
 /// version at all, so a version-2 record met version 3 as a `ReleaseExecSpec`
-/// missing a field — an anonymous serde refusal that tells an operator
+/// missing a field, an anonymous serde refusal that tells an operator
 /// restarting a service nothing about which protocol they are holding.
 /// `held_launcher_protocol_version_peek` reads this field out of the raw
 /// document before the typed decode, so the refusal names both versions.
@@ -848,7 +840,7 @@ impl HeldExecReleaseBinding {
 /// learned separately, applied a third time. A durable `DomainJournalRecord`
 /// carries an optional [`HeldExecReleaseBinding`], every struct on the path
 /// denies unknown fields, and a version-2 binding therefore fails the typed
-/// decode on a *missing field* — an explicit refusal that names neither
+/// decode on a *missing field*, an explicit refusal that names neither
 /// version. Peeking here admits nothing: a document that passes still goes
 /// through the whole typed decode and every validator behind it, including
 /// [`HeldExecReleaseBinding::validate`]'s own version equality.
@@ -1014,7 +1006,7 @@ impl ReleaseExecSpec {
     ///
     /// What it does require is the artefact. A contained command with no
     /// ruleset and no filter would be a release that names containment and
-    /// installs none — the reduced-containment arm this project does not have —
+    /// installs none, the reduced-containment arm this project does not have,
     /// so its absence is a refusal rather than a downgrade. The working
     /// directory must additionally be one of the ruleset's own granted scopes,
     /// because a target that starts in a directory its policy does not name
@@ -1185,7 +1177,7 @@ enum HeldLauncherState {
 ///
 /// Protocol version 3 adds `landlock_scopes`, one entry per committed scope in
 /// the committed ruleset's own order. Without it the controller could not
-/// authenticate the scope descriptors in the helper's `/proc/<pid>/fd` — it
+/// authenticate the scope descriptors in the helper's `/proc/<pid>/fd`, it
 /// would know a scope had been delivered but not where, and the closure proof
 /// would have to be weakened to admit descriptors it could not name. The whole
 /// point of that proof is that it admits nothing it cannot name.
@@ -1413,8 +1405,8 @@ impl StatusEnvelope {
     /// Protocol version 3 needs this because it added a step that can refuse
     /// after the commit is authorized and before the exec is attempted:
     /// installing the containment artefact. That is neither an attempted exec
-    /// failure — [`Self::validate_exec_failed`] requires
-    /// `exec_was_attempted` and is left byte-identical — nor a released
+    /// failure, [`Self::validate_exec_failed`] requires
+    /// `exec_was_attempted` and is left byte-identical, nor a released
     /// target. Reporting it as either would be a claim about a process image
     /// that was never replaced.
     ///

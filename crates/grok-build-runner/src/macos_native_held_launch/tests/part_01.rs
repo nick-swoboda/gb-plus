@@ -62,8 +62,7 @@ fn independently_finish_reconciliation(
         // process still owns that exact unreaped direct child; a reused or
         // unrelated PID returns `ECHILD` instead.
         kill_process(pid, Signal::KILL).expect("independently signal exact child");
-        // Bounded and escalating for the same D-0013 reason the product path
-        // is: a survivor must fail this test, never suspend it.
+        // Bound reaping and re-signal so a survivor fails the test without hanging it.
         reap_exact_condemned_child(pid).expect("independently reap exact child within its bound");
     }
     assert_exact_child_absent_via_ps(u32::try_from(pid.as_raw_pid()).expect("positive PID"));
@@ -289,15 +288,9 @@ fn sigcont_between_observations_is_refused_and_cleaned() {
     }
 }
 
-/// D-0013. The post-spawn cleanup path used to send one `SIGKILL` and then
-/// block in `waitpid` forever. On Darwin a `POSIX_SPAWN_START_SUSPENDED` child
-/// can survive that single signal — the task stays Mach-suspended with the kill
-/// pending, `ps` reports `Ss` instead of `T`, and nothing ever reaps it — so the
-/// launcher hung instead of reporting the survivor its own name forbids.
-///
-/// Both halves of the remedy are pinned here against a real kernel child:
-/// the reap re-signals between polls, and it is bounded, so a child that
-/// outlives the bound becomes a typed refusal rather than a suspended thread.
+/// A suspended Darwin child may survive one pending `SIGKILL`. Verify that
+/// cleanup re-signals between polls and reports a typed refusal if the real
+/// child outlives the deadline.
 #[test]
 fn condemned_child_reap_escalates_between_polls_and_is_bounded_by_a_deadline() {
     // Escalation. This child is genuinely held, so only a signal delivered by
@@ -321,7 +314,7 @@ fn condemned_child_reap_escalates_between_polls_and_is_bounded_by_a_deadline() {
     assert_exact_child_absent_via_ps(u32::try_from(held.as_raw_pid()).expect("positive PID"));
 
     // Bound. `SIGCONT` cannot terminate a resumed `sleep`, so this reap can
-    // only end by expiring — and it must expire, not block.
+    // only end by expiring, and it must expire, not block.
     let path = Path::new("/bin/sleep");
     let authority = system_fixture_authority(path).expect("construct sleep authority");
     let survivor = observed_child(

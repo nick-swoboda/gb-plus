@@ -144,7 +144,7 @@ fn read_procfs_entry(
 /// # Errors
 ///
 /// Returns [`CgroupIoFailure`] when the process is not stopped, when any read
-/// fails — an error is never read as an absence — when a descriptor names an
+/// fails, an error is never read as an absence, when a descriptor names an
 /// object class this table has no kind for, and when `fdinfo` cannot be parsed.
 #[cfg(target_os = "linux")]
 fn observe_stopped_child_descriptor_table(
@@ -324,7 +324,7 @@ impl LinuxServiceChildDescriptorProbe {
 
 /// Starts one stopped-child descriptor-table probe.
 ///
-/// `stdio` are the three descriptors the child receives at fds 0, 1 and 2 —
+/// `stdio` are the three descriptors the child receives at fds 0, 1 and 2,
 /// except that fd 0 is the placement socket, because a child cannot name any
 /// other descriptor without `BorrowedFd::borrow_raw`. That substitution is the
 /// measurement, not an oversight: see this file's header.
@@ -358,7 +358,7 @@ fn spawn_linux_service_child_descriptor_probe(
 ///
 /// `stdout` and `stderr` are the descriptors the plan puts at fds 1 and 2, and
 /// they reach the child through `Stdio`, which is why they arrive without
-/// `FD_CLOEXEC` — the state the plan requires of them. `placements` must begin
+/// `FD_CLOEXEC`, the state the plan requires of them. `placements` must begin
 /// with fd 0 and continue with the strictly increasing run at 3 and above.
 ///
 /// # Errors
@@ -494,39 +494,19 @@ struct LinuxNativeServiceChildLaunchSlot {
 
 #[cfg(target_os = "linux")]
 impl LinuxNativeServiceChildLaunchClosureCapability {
-    /// Mints the child-launch closure by materialising the plan's descriptor
-    /// table in a real process and reading it back out of that process.
+    /// Measures the planned descriptor table in a temporary stopped child.
+    /// Revalidate setup authority, resolve retained descriptors by role, and
+    /// narrow access through `/proc/self/fd` with device/inode checks. Place
+    /// stdio and transferred FDs at the planned numbers, then read the child's
+    /// `fd` and `fdinfo` tables and apply `validate_for`.
     ///
-    /// The sequence, and every step is a kernel answer rather than a claim:
-    ///
-    /// 1. the setup authority is revalidated and the plan re-projects its own
-    ///    child table, so the comparison target is the plan's, not this
-    ///    function's;
-    /// 2. one retained descriptor is resolved per slot from the **already
-    ///    authenticated** setup capability — an endpoint by role, or the
-    ///    retained cwd — and, where the plan gives the child a narrower access
-    ///    than the parent holds, re-opened through `/proc/self/fd` at that
-    ///    access and required to be the same `(device, inode)`;
-    /// 3. fds 1 and 2 travel as `Stdio` and the rest in one atomic `SCM_RIGHTS`
-    ///    message to a child that places each at the exact number the plan
-    ///    names, installs fd 0 with `dup2`, and stops itself;
-    /// 4. the parent waits for state `T` and reads the child's own
-    ///    `/proc/<pid>/fd` and `/proc/<pid>/fdinfo`; and
-    /// 5. the whole table — closure, identities, kinds, access modes and
-    ///    close-on-exec bits — is submitted to the **untouched** `validate_for`.
-    ///
-    /// The child is killed and reaped before the capability is returned, so the
-    /// value holds a proof about a process that no longer exists rather than a
-    /// live one it could be asked to do something with.
+    /// Kill and reap the child before returning the measured capability.
     ///
     /// # Errors
     ///
-    /// Returns [`CgroupIoFailure`] when the setup authority no longer
-    /// validates, when the plan cannot project its child table, when the table
-    /// is outside this mint's compiled bound, when a slot's source is absent or
-    /// cannot be re-opened at the child's access, when the child cannot be
-    /// started or does not stop, when its table cannot be read, and on every
-    /// refusal `validate_for` makes.
+    /// Returns [`CgroupIoFailure`] for invalid authority or table bounds, missing
+    /// descriptors, failed access narrowing, child startup/stop errors, incomplete
+    /// readback or descriptor-table validation failures.
     pub(crate) fn open_authenticated(
         setup_authority: &LinuxNativeServiceSetupDescriptorAuthority,
     ) -> Result<Self, CgroupIoFailure> {
@@ -660,8 +640,8 @@ fn resolve_linux_native_service_child_launch_slots(
 /// Re-opens one retained descriptor at the narrower access the child holds.
 ///
 /// The plan gives the child a read-only view of the sealed setup request the
-/// service retains read-write. A duplicate cannot narrow an access mode — it
-/// names the same open file description — so the object is re-opened through
+/// service retains read-write. A duplicate cannot narrow an access mode, it
+/// names the same open file description, so the object is re-opened through
 /// its own `/proc/self/fd` entry, which reaches the same inode without
 /// resolving any name the plan did not already authenticate. The result is then
 /// required to be that exact inode.
@@ -1007,8 +987,8 @@ impl LinuxRetainedPerCommandDirectories {
     /// The four scopes are the command's own filesystem surface, and their
     /// read/write split is the split the plan's mount table already carries:
     /// the grant's workspace root is readable, and the three directories this
-    /// service created for this command — the execution root, the private
-    /// temporary directory and the output spool — are writable.
+    /// service created for this command, the execution root, the private
+    /// temporary directory and the output spool, are writable.
     ///
     /// # Errors
     ///
@@ -1339,7 +1319,7 @@ struct CanaryControlOutcomeV1 {
 ///
 /// `root_identity` is the kernel identity of the leaf every probe ran under,
 /// and the record requires it to equal the episode's own authoritative
-/// observed identity — so an episode cannot borrow another leaf's results.
+/// observed identity, so an episode cannot borrow another leaf's results.
 /// `suite_result_digest` covers the generation, that identity, and every
 /// outcome in order, so a record whose outcome list was edited after the fact
 /// no longer decodes.
@@ -1564,7 +1544,7 @@ pub(crate) trait LinuxCanarySuite {
 ///
 /// This is the whole boundary between what a suite says and what the journal
 /// will keep, and it is deliberately a total function of the report plus the
-/// episode's own authoritative identity — nothing else contributes, so the
+/// episode's own authoritative identity, nothing else contributes, so the
 /// same report always yields the same digest.
 ///
 /// The suite's report is canonicalized (sorted by control) and then validated
@@ -1702,7 +1682,7 @@ impl LinuxCgroupIo {
     /// [`CanonicalCgroupJournalStore::persist`] at all.
     ///
     /// Returns exactly the control names the episode durably journaled as
-    /// proven — never the names the suite asked for.
+    /// proven, never the names the suite asked for.
     ///
     /// # Errors
     ///
@@ -1737,7 +1717,7 @@ impl LinuxCgroupIo {
             Err(error) => {
                 // A canary episode drives the same leaf lifecycle the
                 // delegation probe does, so a failure leaves the same
-                // reconciliation obligation behind — and the writer flock is
+                // reconciliation obligation behind, and the writer flock is
                 // deliberately retained until it is discharged, exactly as
                 // `release_delegation_lock` requires.
                 self.probe_reconciliation_required = true;
@@ -1761,50 +1741,13 @@ const LINUX_CONTAINED_RELEASE_SCOPE_ROLE_COUNT: usize = 4;
 
 #[cfg(target_os = "linux")]
 impl LinuxRetainedPerCommandDirectories {
-    /// Builds the containment request one contained-command release installs,
-    /// from the descriptors this value already holds.
-    ///
-    /// Every scope descriptor is a `try_clone` — `fcntl(F_DUPFD_CLOEXEC)` — of
-    /// a directory this service created and has held open since. The copy names
-    /// the same open file description, so there is no window in which a path
-    /// could be re-resolved to something else, and close-on-exec stays set. The
-    /// live identity of each copy is then required to equal what the plan's own
-    /// ruleset committed for that role, so a descriptor that was somehow
-    /// substituted refuses here rather than being described.
-    ///
-    /// The role lookup is a closed match with no path-opening arm, which is the
-    /// same discipline the setup-descriptor mint uses: an object identifier this
-    /// service did not create or anchor cannot be turned into a grant.
-    ///
-    /// The two committed digests are the **plan's**, passed through unchanged.
-    /// They are inputs to `build_containment_artefact`, which recomposes the
-    /// whole artefact from these descriptors' own `fstat` answers and a BPF
-    /// program it assembles itself, and then requires the canonical digests to
-    /// equal them. So this mint cannot produce a release the plan did not
-    /// describe: a substituted scope, an edited access set or an invented
-    /// witness is refused by the controller before the helper is told anything.
+    /// Creates a release stdio file through the retained private-temp directory.
+    /// Reopen it with exactly the required access so read-only stdin does not
+    /// retain the writable creation handle.
     ///
     /// # Errors
     ///
-    /// Returns [`CgroupIoFailure`] when the committed ruleset grants no scope or
-    /// more than the closed role set holds, when a committed scope names a role
-    /// this service holds no descriptor for, when a held descriptor cannot be
-    /// duplicated, when a duplicate's live identity is not the identity the plan
-    /// committed for its role, and when the committed denial witness cannot be
-    /// observed or does not answer its committed identity.
-    /// Creates one release stdio stream inside this command's private temp,
-    /// through the held handle rather than by path.
-    ///
-    /// The `Dir` is kept instead of a path precisely so a name cannot be
-    /// resolved twice with something else substituted in between, and the three
-    /// release streams have no reason to be the exception. The file is created
-    /// and then reopened with exactly the access its role needs: a read-only
-    /// stdin must not also be the descriptor that created or truncated it.
-    ///
-    /// # Errors
-    ///
-    /// When the name is not a single safe component, or when the stream cannot
-    /// be created or reopened.
+    /// Fails for an unsafe component name or a create/reopen error.
     pub(crate) fn mint_release_stream(
         &self,
         name: &str,
@@ -1825,6 +1768,14 @@ impl LinuxRetainedPerCommandDirectories {
         Ok(file.into_std())
     }
 
+    /// Duplicates retained scope descriptors with close-on-exec and checks each
+    /// identity against the plan. Closed role lookup cannot reopen ambient paths.
+    /// The plan's unchanged digests bind the reconstructed control artefacts.
+    ///
+    /// # Errors
+    ///
+    /// Fails for invalid scopes, missing roles, descriptor duplication or
+    /// identity mismatches, or an unverified denial witness.
     pub(crate) fn authenticated_containment_request(
         &self,
         workspace_root: &Dir,
@@ -1965,7 +1916,7 @@ impl LinuxRetainedPerCommandDirectories {
     /// The execution root's own retained descriptor, duplicated for a release.
     ///
     /// A contained command's working directory must be one of the scopes its
-    /// ruleset grants — `validate_contained_command` refuses otherwise — and the
+    /// ruleset grants, `validate_contained_command` refuses otherwise, and the
     /// execution root is the scope that exists for exactly that purpose.
     ///
     /// # Errors
@@ -2013,7 +1964,7 @@ impl LinuxRetainedPerCommandDirectories {
 /// The witness is what makes the ruleset a policy rather than a formality: the
 /// launcher opens it after `restrict_self` and requires `EACCES`. If it were
 /// allowed to drift onto a granted scope, or onto an object the compiled runtime
-/// allowlist grants, the denial proof would be vacuous — so its identity is
+/// allowlist grants, the denial proof would be vacuous, so its identity is
 /// checked here against what the plan committed, before the release is built.
 #[cfg(target_os = "linux")]
 fn require_committed_denial_witness(
@@ -2048,33 +1999,15 @@ fn require_committed_denial_witness(
     Ok(())
 }
 
-/// Seals one command's target binary into an `MFD_EXEC` memfd.
-///
-/// This is the command-target counterpart of the sealed **service** image.
-/// `ExecutableImageType` has exactly one variant, `SealedMemfd`, so a contained
-/// command's target cannot be a named file: it is copied under a hash into an
-/// anonymous, execute-capable memfd and sealed shut, and the release carries the
-/// descriptor rather than any path.
-///
-/// The sequence is the one the service image and the canary image already use,
-/// and it is ordered for a reason: create, copy under the hash, set the mode,
-/// apply the exact seal set, then read the seals back and re-hash the sealed
-/// bytes. Hashing only while the memfd is still writable would measure something
-/// that could still change, and reading the seals back is what makes "sealed" an
-/// observation rather than a request.
-///
-/// The caller passes the digest it expects, which is the plan's commitment to
-/// which binary this command runs. A source that changed between the plan's
-/// measurement and this seal is refused here — the substitution the whole
-/// descriptor discipline exists to catch.
+/// Copies the command target into an executable memfd and verifies its digest.
+/// Set the mode, apply the required seals, read them back and re-hash the sealed
+/// bytes. The final digest must match the plan's `expected_content_sha256`;
+/// hashing only the writable copy would not exclude later modification.
 ///
 /// # Errors
 ///
-/// Returns [`CgroupIoFailure`] when the memfd cannot be created, when the source
-/// cannot be read, when it is empty or exceeds the image bound, when the mode or
-/// seals cannot be applied, when the kernel does not report back the exact
-/// required seal set, when the sealed bytes differ from the copied bytes, and
-/// when the sealed digest is not `expected_content_sha256`.
+/// Returns [`CgroupIoFailure`] for creation/read errors, an empty or oversized
+/// image, mode or seal failures, or any content/digest mismatch.
 #[cfg(target_os = "linux")]
 pub(crate) fn seal_contained_command_target(
     source: &mut std::fs::File,

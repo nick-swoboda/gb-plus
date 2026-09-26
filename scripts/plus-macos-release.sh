@@ -470,8 +470,10 @@ signed_entitlements=$(/usr/bin/codesign -d --entitlements :- "$app_path" 2>&1)
 "$bundle_binary" --version
 "$bundle_binary" --tauri-smoke
 
-COPYFILE_DISABLE=1 /usr/bin/ditto --norsrc --noextattr --noqtn --noacl \
-  --zlibCompressionLevel 9 -c -k --keepParent "$app_path" "$zip_path"
+(
+  cd "$dist_root"
+  COPYFILE_DISABLE=1 /usr/bin/zip -X -9 -q -r "$zip_path" "GB Plus.app"
+)
 zip_entries=$(/usr/bin/unzip -Z1 "$zip_path")
 case "$zip_entries" in
   *"__MACOSX"*|*"/._"*) fail "zip contains AppleDouble/resource-fork entries" ;;

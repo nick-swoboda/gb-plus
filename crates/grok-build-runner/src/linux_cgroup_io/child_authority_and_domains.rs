@@ -290,7 +290,7 @@ impl LinuxNativeServiceChildLaunchClosureCapability {
 /// Four independent things are required, and each is a kernel answer about the
 /// child rather than about the parent:
 ///
-///   * the table is **closed** — the child's `/proc/<pid>/fd` enumerates the
+///   * the table is **closed**, the child's `/proc/<pid>/fd` enumerates the
 ///     plan's exact contiguous target set and nothing else;
 ///   * every slot holds the exact kernel object the plan's source names, proved
 ///     by `(device, inode)` against the retained descriptor and required to be
@@ -1356,18 +1356,13 @@ impl LinuxCgroupIo {
         self.delegation.as_fd()
     }
 
-    /// Nonblocking terminal for a released target this service still retains.
-    ///
-    /// The registry keeps the `Child` and does the waiting; this reports only
-    /// the status it saw. A domain that owns this `LinuxCgroupIo` outright can
-    /// therefore observe its leader without any raw handle crossing the
-    /// boundary -- which is the property ADR-0014 is about, and it is not
-    /// spent here.
+    /// Reports the observed terminal status of a retained released target.
+    /// The registry owns the `Child` and performs the wait; no raw handle crosses
+    /// this boundary.
     ///
     /// # Errors
     ///
-    /// When no released session is retained for `pid`, or the session has not
-    /// reached an observed same-PID exec.
+    /// Fails if `pid` has no retained session or no observed same-PID exec.
     #[cfg(target_os = "linux")]
     pub(crate) fn observe_released_leader(
         &mut self,

@@ -960,7 +960,7 @@
 
         // The unvaried inputs mint, so every refusal below is attributable to
         // the one value that changed. In the service-owned-parent arm there is
-        // no such control — the parent is itself the varied value — so this
+        // no such control, the parent is itself the varied value, so this
         // test has nothing to establish there and says so rather than skipping.
         match observe_anchored_production_plan_facts(
             &image,
@@ -1233,9 +1233,9 @@
     /// `validate_cgroup` can require the parent not to be the service's and not
     /// to be writable outside its owner, but a plan carries no delegator
     /// identity, so a parent owned by some *third* identity satisfies every
-    /// clause a plan can state. The anchor does carry one — `installer_uid`,
+    /// clause a plan can state. The anchor does carry one, `installer_uid`,
     /// which `validate_service_install_commitment` has already required to
-    /// differ from the runner's — and this is where it is used.
+    /// differ from the runner's, and this is where it is used.
     ///
     /// The harness varies exactly one `chown` of `/sys/fs/cgroup/gbd` between
     /// the two arms and nothing else.
@@ -1295,7 +1295,7 @@
                 "the refusal moved: {detail}"
             );
         } else {
-            // Control: delegation as the kernel documents it — the delegator
+            // Control: delegation as the kernel documents it, the delegator
             // keeps the parent, the service owns only the delegated subtree.
             assert_eq!(parent_uid, installer_uid, "the delegator owns the parent");
             assert_ne!(
