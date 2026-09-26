@@ -792,18 +792,17 @@ pub(crate) async fn send_chat(
 ) -> Result<AppSnapshot, String> {
     state.read_aloud.stop();
     let shared = Arc::clone(&state.backend);
-    let (queue, journal, request) = {
+    let (journal, item) = {
         let backend = lock_backend(&shared)?;
+        backend.events.ensure_available()?;
         (
-            backend.queue.clone(),
             backend.events.clone(),
-            backend.queue_request(&message, true)?,
+            backend
+                .queue
+                .enqueue(backend.queue_request(&message, true)?)?,
         )
     };
-    journal.ensure_available()?;
-    let context =
-        EventContext::project_session(request.project_id.clone(), request.session_id.clone());
-    let item = queue.enqueue(request)?;
+    let context = EventContext::project_session(item.project_id.clone(), item.session_id.clone());
     record_activity(
         &app,
         &journal,
@@ -915,18 +914,17 @@ pub(crate) async fn send_next(
     state.read_aloud.stop();
     let shared = Arc::clone(&state.backend);
     let predecessor = RunId::new(run_id);
-    let (queue, journal, request) = {
+    let (journal, item) = {
         let backend = lock_backend(&shared)?;
+        backend.events.ensure_available()?;
         (
-            backend.queue.clone(),
             backend.events.clone(),
-            backend.queue_request(&message, true)?,
+            backend
+                .queue
+                .enqueue_send_next(backend.queue_request(&message, true)?, &predecessor)?,
         )
     };
-    journal.ensure_available()?;
-    let context =
-        EventContext::project_session(request.project_id.clone(), request.session_id.clone());
-    let item = queue.enqueue_send_next(request, &predecessor)?;
+    let context = EventContext::project_session(item.project_id.clone(), item.session_id.clone());
     record_activity(
         &app,
         &journal,
@@ -952,6 +950,7 @@ pub(crate) async fn release_held_message(
         (backend.queue.clone(), backend.events.clone())
     };
     journal.ensure_available()?;
+    let scheduler = queue.lock_scheduler()?;
     let item = queue.release_held(&QueueItemId::new(queue_item_id))?;
     record_activity(
         &app,
@@ -963,6 +962,7 @@ pub(crate) async fn release_held_message(
             mode: Some(QueueMode::LegacyHeld),
         },
     )?;
+    drop(scheduler);
     schedule_available(&app, &shared, Some(&item.project_id), false)?;
     current_snapshot(&shared).await
 }
@@ -979,6 +979,7 @@ pub(crate) async fn retry_queue_run(
         (backend.queue.clone(), backend.events.clone())
     };
     journal.ensure_available()?;
+    let scheduler = queue.lock_scheduler()?;
     let item = queue.retry(&RunId::new(run_id))?;
     record_activity(
         &app,
@@ -990,6 +991,7 @@ pub(crate) async fn retry_queue_run(
             mode: Some(QueueMode::Send),
         },
     )?;
+    drop(scheduler);
     schedule_available(&app, &shared, None, false)?;
     current_snapshot(&shared).await
 }

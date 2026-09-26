@@ -10,23 +10,21 @@ export function createUpdates({ invoke, elements, getSnapshot, getBusy, setAccou
   switchButton.setAttribute("aria-describedby", "grok-cli-engine-detail grok-cli-compatibility");
   const engineDetail = button.ownerDocument.createElement("p");
   engineDetail.id = "grok-cli-engine-detail";
-  engineDetail.textContent = "Standard follows xAI updates and shares your Terminal settings. CLI commands run on your Mac, with Ask permissions by default.";
+  engineDetail.textContent = "Standard follows xAI updates and shares your Terminal settings. CLI commands run on your Mac, with Ask permissions by default. Waiting messages stay saved until you send them.";
   status.after(engineDetail, switchButton);
 
   const contained = () => getSnapshot()?.account?.engine?.mode === "gbPlusContained";
   function render() {
     const queue = getSnapshot()?.queue;
-    const active = queue?.activeGlobalRuns > 0;
+    const active = queue?.activeGlobalRuns > 0 || queue?.items?.some(item => item.state === "running");
     button.disabled = !invoke || pending || getBusy() || !queue?.available || active;
     button.textContent = updating ? "Updating…" : "Update Grok CLI";
     button.setAttribute("aria-busy", String(updating));
-    status.textContent = active && !updating ? "Finish or stop chats before updating." : message;
+    status.textContent = !queue?.available ? "Saved queue state is unavailable. Reopen the app and check Diagnostics." : active && !updating ? "Finish or stop chats before updating or switching engines." : message;
     switchButton.hidden = engineDetail.hidden = !contained();
-    const queued = queue?.items?.some(item => ["queued", "running"].includes(item.state));
-    switchButton.disabled = button.disabled || queued;
+    switchButton.disabled = button.disabled;
     if (contained() && !pending) {
       status.textContent += " Switch to standard to use CLI updates.";
-      if (queued && !active) status.textContent += " Finish or remove queued work before switching.";
     }
   }
 
@@ -82,7 +80,7 @@ export function createUpdates({ invoke, elements, getSnapshot, getBusy, setAccou
       onSnapshot(await invoke("set_engine_settings", { settings: {
         ...getSnapshot().account.engine, mode: "grokCliStandard",
       } }));
-      message = "Grok CLI standard selected. Choose Connect when ready.";
+      message = "Grok CLI standard selected. Choose Connect when ready. Waiting messages remain held in their chats.";
       elements.loginGrokCli?.focus();
     } catch (error) {
       message = `Could not switch engines. ${String(error)}`;

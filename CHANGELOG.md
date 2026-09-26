@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3-plus
+
+- Fix engine switching when older projects have held or queued messages. Waiting
+  messages stay saved in their original chats and require an explicit send after
+  switching; running chats still must finish or stop first.
+- Explain unavailable queue state separately from running work, and show why a
+  message is held without implying it must be removed.
+
 ## 0.2.2-plus
 
 - Use Grok CLI standard for new installations and offer a direct switch in

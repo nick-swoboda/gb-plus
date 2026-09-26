@@ -229,6 +229,28 @@ test("bottom following handles delayed layout, preserves reading position and re
 });
 
 const textOf = node => node.textContent + (node.children || []).map(textOf).join("");
+test("held messages show their reason only in the owning chat and never send on render", () => {
+  const originalDocument = globalThis.document;
+  globalThis.document = { createElement: () => new FakeElement(), addEventListener() {} };
+  try {
+    const names = ["sendControl", "sendMenuToggle", "sendButton", "sendMenu", "chatNextStrip", "chatPendingTurns", "chatNextList", "chatNextSummary", "chatNextPopover", "chatSteerCancel", "chatSteerSubmit", "chatSteerConfirmation", "chatSteerPreview"];
+    const elements = Object.fromEntries(names.map(name => [name, new FakeElement()]));
+    const calls = [];
+    const scheduling = createChatScheduling({ elements, invoke: (...args) => calls.push(args) });
+    for (const blockedReason of ["Held from an earlier version.", "Held after changing engines. Choose Send next when ready.", null]) {
+      const item = { id: "held", projectId: "older-project", sessionId: "older-chat", ordinal: 1, prompt: "Saved message", state: "queued", autoStart: false, blockedReason };
+      const snapshot = { activeProjectId: "empty-project", activeSessionId: "empty-chat", chat: "", queue: { available: true, items: [item], runs: [], steering: [] } };
+      scheduling.render(snapshot);
+      assert.doesNotMatch(textOf(elements.chatPendingTurns), /Saved message/);
+      scheduling.render({ ...snapshot, activeProjectId: item.projectId, activeSessionId: item.sessionId });
+      assert.ok(textOf(elements.chatPendingTurns).includes(blockedReason || "Held. Choose Send next when ready."));
+      assert.match(textOf(elements.chatPendingTurns), /Saved message/);
+      assert.match(textOf(elements.chatPendingTurns), /Send next/);
+      assert.equal(calls.length, 0);
+    }
+  } finally { globalThis.document = originalDocument; }
+});
+
 test("pending messages keep submission order and Accept stays with the latest completed reply", () => {
   const originalDocument = globalThis.document;
   globalThis.document = { createElement: () => new FakeElement(), addEventListener() {} };

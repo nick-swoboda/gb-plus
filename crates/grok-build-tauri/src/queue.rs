@@ -22,6 +22,7 @@ const PLUS_QUEUE_LOCK_FILE: &str = "plus-queue.lock";
 mod cancellation;
 pub(crate) mod children;
 mod cli_interactions;
+mod engine;
 mod executions;
 pub(crate) mod workflows;
 
@@ -670,7 +671,7 @@ impl QueueCoordinator {
                 return Err("Only an exact held message can be sent next.".into());
             }
             item.auto_start = true;
-            if item.blocked_reason.as_deref() == Some("Held from an earlier version.") {
+            if engine::is_hold_reason(item.blocked_reason.as_deref()) {
                 item.blocked_reason = None;
             }
             Ok(item.clone())

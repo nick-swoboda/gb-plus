@@ -175,7 +175,8 @@ fn assert_chat_scheduling_assets(html: &str, app_javascript: &str, queue_javascr
             "missing Chat-first control {control}"
         );
     }
-    assert!(queue_javascript.contains("Held from an earlier version"));
+    assert!(queue_javascript.contains("item.blockedReason"));
+    assert!(queue_javascript.contains("Held. Choose Send next when ready."));
     assert!(queue_javascript.contains("predecessorRunId"));
     assert!(queue_javascript.contains("Send now"));
     assert!(queue_javascript.contains("Send next"));
@@ -376,7 +377,7 @@ fn first_run_is_not_connected_with_honest_off_status() {
     let root = fixture_root("first-run");
     let mut backend = Backend::new(PlusSessionStore::from_state_root(root.join("state")));
     let snapshot = backend.snapshot();
-    assert_eq!(snapshot.version, "0.2.2-plus");
+    assert_eq!(snapshot.version, "0.2.3-plus");
     assert_eq!(snapshot.security.kind, "off");
     assert_eq!(snapshot.security.status, "Command security: Off");
     assert_eq!(snapshot.security.copy, "Adds isolation to agent commands.");
@@ -1865,7 +1866,8 @@ fn chat_first_run_control_removes_tasks_and_keeps_agent_approval_in_chat() {
     assert!(app.contains("activeRun.id"));
     assert!(scheduling.contains("intent.state !== \"promoted_to_next\""));
     assert!(scheduling.contains("Delivery uncertain · not sent again"));
-    assert!(scheduling.contains("Held from an earlier version"));
+    assert!(scheduling.contains("item.blockedReason"));
+    assert!(scheduling.contains("Held. Choose Send next when ready."));
     assert!(!notifications.contains("onAccept"));
     assert!(!notifications.contains("onReject"));
 }

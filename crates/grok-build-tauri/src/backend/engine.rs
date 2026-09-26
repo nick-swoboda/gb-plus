@@ -1,7 +1,6 @@
 //! Engine changes are serialized with queue admission.
 
 use super::{Backend, SnapshotSeed};
-use crate::queue::QueueItemState;
 use crate::runtime::engine::EngineSettings;
 
 impl Backend {
@@ -46,17 +45,12 @@ impl Backend {
     }
 
     pub(crate) fn set_engine(&mut self, settings: EngineSettings) -> Result<SnapshotSeed, String> {
-        let view = self.queue.view();
-        if !view.available
-            || view.active_global_runs != 0
-            || view
-                .items
-                .iter()
-                .any(|item| matches!(item.state, QueueItemState::Queued | QueueItemState::Running))
-        {
-            return Err("Finish or remove queued work before switching engines.".into());
+        settings.validate()?;
+        if settings != self.runtime.engine_settings() {
+            // Persist the hold first so a crash cannot run old messages under new authority.
+            self.queue.hold_for_engine_change()?;
+            self.runtime.set_engine(settings)?;
         }
-        self.runtime.set_engine(settings)?;
         Ok(self.snapshot_seed())
     }
 }

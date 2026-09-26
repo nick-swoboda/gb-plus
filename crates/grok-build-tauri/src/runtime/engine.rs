@@ -83,7 +83,7 @@ impl EngineSettings {
             .map_err(|e| e.to_string())
     }
 
-    fn validate(&self) -> Result<(), String> {
+    pub(crate) fn validate(&self) -> Result<(), String> {
         if self.schema_version != 1 {
             return Err(
                 "Unknown engine settings version; automatic execution is unavailable.".into(),

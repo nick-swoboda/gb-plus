@@ -64,8 +64,9 @@ optional capabilities start disabled.
 
 New installations use **Grok CLI standard**. Existing engine choices are
 preserved; **Account → Updates → Use Grok CLI standard** switches an older
-installation explicitly, after queued work is finished or removed. Connect
-again when ready. App-managed API-key and MCP credential storage
+installation explicitly. Stop running chats first; waiting messages stay saved
+in their original chats until you choose **Send next**. Connect again when ready.
+App-managed API-key and MCP credential storage
 requires a stable signed build. Existing stored keys are preserved.
 
 Standard CLI commands and the interactive Terminal run on your Mac. Optional

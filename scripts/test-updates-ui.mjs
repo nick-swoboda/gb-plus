@@ -166,11 +166,27 @@ test("a CLI update in contained mode reports the required switch, not a reconnec
   assert.equal(f.calls.some(call => call.method === "set_engine_settings"), false);
 });
 
-test("queued work, active work, missing queue state and busy operations prevent engine switching", async () => {
+test("waiting messages in other projects do not prevent an explicit engine switch", async () => {
+  for (const autoStart of [false, true]) {
+    const f = fixture();
+    f.current.account.engine.mode = "gbPlusContained";
+    f.current.activeProjectId = "empty-project";
+    f.current.queue.items = [{ id: "saved-message", projectId: "older-project", state: "queued", autoStart }];
+    f.controller.render();
+    assert.equal(f.switchButton.disabled, false);
+    assert.match(f.engineDetail.textContent, /Waiting messages stay saved/);
+    await f.switchButton.click();
+    assert.equal(f.current.account.engine.mode, "grokCliStandard");
+    assert.match(f.status.textContent, /Waiting messages remain held/);
+    assert.deepEqual(f.calls.map(call => call.method), ["set_engine_settings"]);
+    assert.equal(f.current.queue.items[0].id, "saved-message");
+  }
+});
+
+test("active work, missing queue state and busy operations prevent engine switching", async () => {
   for (const queue of [
     { available: false, activeGlobalRuns: 0 },
     { available: true, activeGlobalRuns: 1 },
-    { available: true, activeGlobalRuns: 0, items: [{ state: "queued" }] },
     { available: true, activeGlobalRuns: 0, items: [{ state: "running" }] },
   ]) {
     const f = fixture();
@@ -179,6 +195,8 @@ test("queued work, active work, missing queue state and busy operations prevent 
     await f.switchButton.click();
     assert.equal(f.calls.length, 0);
     assert.equal(f.switchButton.disabled, true);
+    assert.doesNotMatch(f.status.textContent, /remove queued work/);
+    assert.match(f.status.textContent, queue.available ? /Finish or stop chats/ : /Saved queue state is unavailable/);
   }
   const f = fixture();
   f.current.account.engine.mode = "gbPlusContained";
@@ -188,10 +206,10 @@ test("queued work, active work, missing queue state and busy operations prevent 
 });
 
 test("a refused switch retains the engine and exposes the backend's reason", async () => {
-  const f = fixture(() => { throw new Error("Finish or remove queued work before switching engines."); });
+  const f = fixture(() => { throw new Error("A previous CLI is still stopping."); });
   f.current.account.engine.mode = "gbPlusContained";
   await f.switchButton.click();
-  assert.match(f.status.textContent, /Finish or remove queued work/);
+  assert.match(f.status.textContent, /A previous CLI is still stopping/);
   assert.equal(f.current.account.engine.mode, "gbPlusContained");
   assert.equal(f.switchButton.disabled, false);
   assert.equal(f.busy(), false);

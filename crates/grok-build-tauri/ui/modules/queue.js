@@ -145,7 +145,7 @@ export function createChatScheduling({ invoke, elements, onSnapshot, onError, on
   }
 
   function itemLabel(queue, item) {
-    if (!item.autoStart) return "Held from an earlier version";
+    if (!item.autoStart) return item.blockedReason || "Held. Choose Send next when ready.";
     const run = runForItem(queue, item);
     if (run?.state === "failed") return "Failed";
     if (run?.state === "stopped") return "Stopped";
